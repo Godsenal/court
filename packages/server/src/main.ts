@@ -81,7 +81,7 @@ const engine = new Engine({
             "Return a concise result summary as your final answer.",
           policy: { models: {}, runner: "claude", autoApproveBelow: "medium" },
         },
-        model: "anthropic/claude-sonnet-4.5",
+        model: "anthropic/claude-sonnet-5",
         prompt: task,
       }),
     // Computer-use tasks: a headless Claude agent using available screen-control
@@ -99,7 +99,7 @@ const engine = new Engine({
             "Return a concise result summary.",
           policy: { models: {}, runner: "claude", autoApproveBelow: "medium" },
         },
-        model: "anthropic/claude-sonnet-4.5",
+        model: "anthropic/claude-sonnet-5",
         prompt: task,
       }),
   }),
@@ -220,7 +220,7 @@ const server = Bun.serve({
       if (!input.goal) return json({ error: "goal required" }, 400);
       if (input.template === "auto") {
         // Graph engineering: a planner model designs the graph for this goal.
-        const plannerModel = roles.get("pm")?.policy.models.planner ?? "anthropic/claude-opus-4.5";
+        const plannerModel = roles.get("pm")?.policy.models.planner ?? "anthropic/claude-opus-5";
         try {
           input.graph = await planGraph(llm, input.goal, input.cwd, plannerModel);
           input.template = "custom";

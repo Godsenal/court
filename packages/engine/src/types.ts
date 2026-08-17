@@ -7,7 +7,7 @@ export type ModelId = string;
 export type ModelTier = "planner" | "executor" | "cheap";
 
 export interface RolePolicy {
-  /** e.g. { planner: "anthropic/claude-opus-4.5", executor: "anthropic/claude-sonnet-4.5" } */
+  /** e.g. { planner: "anthropic/claude-opus-5", executor: "anthropic/claude-sonnet-5" } */
   models: Partial<Record<ModelTier, ModelId>>;
   /**
    * Which agent adapter runs this role's work: "claude", "codex", "llm", or a

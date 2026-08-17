@@ -31,7 +31,7 @@ export interface EngineDeps {
   now?: () => string;
 }
 
-const DEFAULT_MODEL: ModelId = "anthropic/claude-sonnet-4.5";
+const DEFAULT_MODEL: ModelId = "anthropic/claude-sonnet-5";
 
 export class Engine {
   private runs = new Map<string, RunState>();

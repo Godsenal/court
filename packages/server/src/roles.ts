@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import type { Role } from "@court/engine";
 
-const PLANNER = "anthropic/claude-opus-4.5";
-const EXECUTOR = "anthropic/claude-sonnet-4.5";
+const PLANNER = "anthropic/claude-opus-5";
+const EXECUTOR = "anthropic/claude-sonnet-5";
 const CHEAP = "anthropic/claude-haiku-4.5";
 
 /** Built-in ministers. User overrides live in ~/.court/roles/*.json. */
