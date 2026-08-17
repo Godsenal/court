@@ -50,7 +50,9 @@ export function RunView({ runId, onArchived }: { runId: string; onArchived: (id:
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <p className="mb-5 whitespace-pre-wrap text-[13px] leading-relaxed text-dim">{run.mission.goal}</p>
+        {run.mission.goal !== run.mission.title && (
+          <p className="mb-5 whitespace-pre-wrap text-[13px] leading-relaxed text-dim">{run.mission.goal}</p>
+        )}
         <ol className="flex flex-col gap-2 pb-4">
           {nodes.map((node, i) => (
             <NodeRow key={node.spec.id} runId={run.runId} node={node} index={i} />
