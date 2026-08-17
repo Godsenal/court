@@ -9,8 +9,11 @@ export type ModelTier = "planner" | "executor" | "cheap";
 export interface RolePolicy {
   /** e.g. { planner: "anthropic/claude-opus-4.5", executor: "anthropic/claude-sonnet-4.5" } */
   models: Partial<Record<ModelTier, ModelId>>;
-  /** Which agent adapter runs this role's work. */
-  runner: "claude" | "codex" | "llm";
+  /**
+   * Which agent adapter runs this role's work: "claude", "codex", "llm", or a
+   * named runner from the server's runner registry (e.g. "claude-work").
+   */
+  runner: string;
   /** Auto-approve policy: gates below this risk level resolve themselves. */
   autoApproveBelow: RiskLevel;
 }

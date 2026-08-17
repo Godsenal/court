@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { Engine, type RunEvent, type RunState } from "@court/engine";
 import {
   ClaudeAgentExecutor,
@@ -28,15 +29,36 @@ function broadcast(event: RunEvent, state: RunState): void {
   for (const ws of sockets) ws.send(message);
 }
 
+// Named runners for multi-account support: ~/.court/runners.json maps a name
+// to {type: "claude"|"codex", env?: {...}} — e.g. a second Claude account via
+// CLAUDE_CONFIG_DIR or a second Codex account via CODEX_HOME.
+function loadRunners(): Record<string, ClaudeAgentExecutor | CodexAgentExecutor> {
+  const base: Record<string, ClaudeAgentExecutor | CodexAgentExecutor> = {
+    // COURT_VISIBLE=1 runs claude steps in visible cmux workspaces.
+    claude: new ClaudeAgentExecutor({ cmux, visible: process.env.COURT_VISIBLE === "1" }),
+    codex: new CodexAgentExecutor(),
+  };
+  const file = `${process.env.HOME}/.court/runners.json`;
+  try {
+    const defs = JSON.parse(readFileSync(file, "utf8")) as Record<
+      string,
+      { type: "claude" | "codex"; env?: Record<string, string>; bin?: string; extraArgs?: string[] }
+    >;
+    for (const [name, def] of Object.entries(defs)) {
+      base[name] =
+        def.type === "codex"
+          ? new CodexAgentExecutor({ env: def.env, bin: def.bin, extraArgs: def.extraArgs })
+          : new ClaudeAgentExecutor({ env: def.env, bin: def.bin, extraArgs: def.extraArgs, cmux, visible: process.env.COURT_VISIBLE === "1" });
+    }
+    console.log(`[runners] ${Object.keys(base).join(", ")}`);
+  } catch {
+    // no custom runners file — defaults only
+  }
+  return base;
+}
+
 const engine = new Engine({
-  agent: new RoutingAgentExecutor(
-    {
-      // COURT_VISIBLE=1 runs claude steps in visible cmux workspaces.
-      claude: new ClaudeAgentExecutor({ cmux, visible: process.env.COURT_VISIBLE === "1" }),
-      codex: new CodexAgentExecutor(),
-    },
-    llm,
-  ),
+  agent: new RoutingAgentExecutor(loadRunners(), llm),
   tool: new DefaultToolExecutor({
     // Browser tasks run as a headless Claude agent driving ego-browser
     // (isolated task spaces that reuse the user's login state).

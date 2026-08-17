@@ -8,6 +8,8 @@ export interface CodexAdapterOptions {
   bin?: string;
   extraArgs?: string[];
   timeoutMs?: number;
+  /** Extra env — set CODEX_HOME to run under a different Codex account. */
+  env?: Record<string, string>;
 }
 
 /** Prefer a durable codex binary over cmux's session-scoped PATH shim. */
@@ -46,7 +48,7 @@ export class CodexAgentExecutor implements AgentExecutor {
       cwd: req.cwd,
       stdout: "pipe",
       stderr: "pipe",
-      env: { ...process.env },
+      env: { ...process.env, ...this.opts.env },
     });
     req.onSession?.({ runner: "codex", pid: proc.pid });
 

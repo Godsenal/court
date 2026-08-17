@@ -12,6 +12,11 @@ export interface ClaudeAdapterOptions {
   /** Per-call timeout in ms. */
   timeoutMs?: number;
   /**
+   * Extra environment for the spawned CLI. Point CLAUDE_CONFIG_DIR at another
+   * config dir to run this executor under a different Claude account.
+   */
+  env?: Record<string, string>;
+  /**
    * When set, runs the step inside a visible cmux workspace terminal instead of
    * a hidden child process, so the human can watch the agent work live.
    */
@@ -54,7 +59,7 @@ export class ClaudeAgentExecutor implements AgentExecutor {
       cwd: req.cwd,
       stdout: "pipe",
       stderr: "pipe",
-      env: { ...process.env },
+      env: { ...process.env, ...this.opts.env },
     });
     req.onSession?.({ runner: "claude", pid: proc.pid });
 

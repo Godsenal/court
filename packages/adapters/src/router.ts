@@ -9,7 +9,7 @@ import type { AgentExecutor, AgentRunRequest, LlmCall } from "@court/engine";
  */
 export class RoutingAgentExecutor implements AgentExecutor {
   constructor(
-    private runners: Partial<Record<"claude" | "codex", AgentExecutor>>,
+    private runners: Record<string, AgentExecutor>,
     private llm: LlmCall,
   ) {}
 
