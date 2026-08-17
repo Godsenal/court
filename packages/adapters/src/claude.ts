@@ -38,7 +38,7 @@ export class ClaudeAgentExecutor implements AgentExecutor {
 
   private async runHeadless(req: AgentRunRequest): Promise<string> {
     const bin = this.opts.bin ?? "claude";
-    const model = stripProvider(req.model);
+    const model = toClaudeCliModel(req.model);
     const args = [
       "-p",
       req.prompt,
@@ -94,7 +94,7 @@ export class ClaudeAgentExecutor implements AgentExecutor {
       runnerFile,
       `#!/bin/zsh
 echo "👑 court step: ${req.node.id} (${req.role.id} / ${req.model})"
-${bin} -p "$(cat '${promptFile}')" --output-format json --model '${stripProvider(req.model)}' --append-system-prompt "$(cat '${systemFile}')" ${extra} | tee '${outFile}'
+${bin} -p "$(cat '${promptFile}')" --output-format json --model '${toClaudeCliModel(req.model)}' --append-system-prompt "$(cat '${systemFile}')" ${extra} | tee '${outFile}'
 echo $? > '${doneFile}'
 echo "\\n✓ court step finished — this terminal can be closed."
 `,
@@ -125,13 +125,30 @@ export function stripProvider(model: string): string {
   return slash === -1 ? model : model.slice(slash + 1);
 }
 
-function parseClaudeJson(stdout: string, onSession?: AgentRunRequest["onSession"]): string {
+/**
+ * Gateway-style ids don't always match claude CLI model ids. Map Claude model
+ * families to CLI aliases (always valid, resolve to the latest of the family);
+ * non-Claude ids pass through stripped.
+ */
+export function toClaudeCliModel(model: string): string {
+  const m = stripProvider(model);
+  if (/claude.*opus|^opus/i.test(m)) return "opus";
+  if (/claude.*sonnet|^sonnet/i.test(m)) return "sonnet";
+  if (/claude.*haiku|^haiku/i.test(m)) return "haiku";
+  return m;
+}
+
+export function parseClaudeJson(stdout: string, onSession?: AgentRunRequest["onSession"]): string {
   try {
     const parsed = JSON.parse(stdout);
     if (parsed.session_id && onSession) onSession({ runner: "claude", sessionId: parsed.session_id });
+    if (parsed.is_error) {
+      throw new Error(`claude reported error: ${JSON.stringify(parsed.result ?? parsed).slice(0, 500)}`);
+    }
     if (typeof parsed.result === "string") return parsed.result;
     return stdout;
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith("claude reported error")) throw e;
     return stdout.trim();
   }
 }

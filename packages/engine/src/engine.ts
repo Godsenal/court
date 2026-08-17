@@ -100,20 +100,27 @@ export class Engine {
     const inflight = this.inflight.get(runId) ?? new Set();
     this.inflight.set(runId, inflight);
 
-    for (const node of Object.values(run.nodes)) {
-      if (node.status !== "pending" || inflight.has(node.spec.id)) continue;
-      const deps = node.spec.dependsOn.map((id) => run.nodes[id]);
-      if (deps.some((d) => !d)) continue; // dep not materialized yet (fanout/loop children)
-      if (deps.some((d) => d!.status === "failed" || d!.status === "skipped")) {
-        this.emit({ type: "node.status", runId, nodeId: node.spec.id, status: "skipped", at: this.now() });
-        continue;
+    // Re-read state after every emit: a skip can cascade to further skips.
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const current = this.runs.get(runId)!;
+      for (const node of Object.values(current.nodes)) {
+        if (node.status !== "pending" || inflight.has(node.spec.id)) continue;
+        const deps = node.spec.dependsOn.map((id) => current.nodes[id]);
+        if (deps.some((d) => !d)) continue; // dep not materialized yet (fanout/loop children)
+        if (deps.some((d) => d!.status === "failed" || d!.status === "skipped")) {
+          this.emit({ type: "node.status", runId, nodeId: node.spec.id, status: "skipped", at: this.now() });
+          changed = true;
+          continue;
+        }
+        if (!deps.every((d) => d!.status === "completed")) continue;
+        inflight.add(node.spec.id);
+        void this.dispatch(runId, node.spec).finally(() => {
+          inflight.delete(node.spec.id);
+          this.tick(runId);
+        });
       }
-      if (!deps.every((d) => d!.status === "completed")) continue;
-      inflight.add(node.spec.id);
-      void this.dispatch(runId, node.spec).finally(() => {
-        inflight.delete(node.spec.id);
-        this.tick(runId);
-      });
     }
 
     this.finishIfDone(runId);

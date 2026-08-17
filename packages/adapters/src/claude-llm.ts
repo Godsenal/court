@@ -1,5 +1,5 @@
 import type { LlmCall } from "@court/engine";
-import { stripProvider } from "./claude.ts";
+import { parseClaudeJson, toClaudeCliModel } from "./claude.ts";
 
 /**
  * Plain completion via the local claude CLI (`claude -p`), used when no
@@ -16,7 +16,7 @@ export function createClaudeLlm(bin = "claude"): LlmCall {
         "--output-format",
         "json",
         "--model",
-        stripProvider(model),
+        toClaudeCliModel(model),
         "--append-system-prompt",
         system,
         "--disallowedTools",
@@ -31,13 +31,9 @@ export function createClaudeLlm(bin = "claude"): LlmCall {
       proc.exited,
     ]);
     clearTimeout(timer);
-    if (code !== 0) throw new Error(`claude llm exited ${code}: ${stderr.slice(0, 1000)}`);
-    try {
-      const parsed = JSON.parse(stdout);
-      if (typeof parsed.result === "string") return parsed.result;
-    } catch {
-      // fall through
+    if (code !== 0) {
+      throw new Error(`claude llm exited ${code}: ${stderr.slice(0, 1000) || stdout.slice(0, 1000)}`);
     }
-    return stdout.trim();
+    return parseClaudeJson(stdout);
   };
 }
