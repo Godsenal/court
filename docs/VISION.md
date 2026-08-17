@@ -39,10 +39,18 @@ palace(관제 데스크탑) · loops(자율 루프) · cmux-remote(모바일) �
 
 왕이 실제로 일하는 방식들이 court로 굴러가는지 시나리오로 검증한다:
 
-- [ ] S1: 목표 하나로 PM→Dev→Review 파이프라인이 자동 실행되고 대시보드에서 관측된다
-- [ ] S2: 위험한 스텝에서 휴먼 게이트가 발동하고, 승인하면 재개된다
-- [ ] S3: 모델을 Claude→다른 모델로 문자열 하나로 교체해 같은 파이프라인이 돈다
-- [ ] S4: planner/executor 모델 이원화가 실제로 동작한다
-- [ ] S5: cmux 포크 개발 워크플로우(빌드/upstream 머지)가 돌아간다
-- [ ] S6: 브라우저 작업(ego-browser)이 파이프라인 스텝으로 실행된다
-- [ ] S7: claude + codex 멀티 에이전트가 같은 그래프에서 협업한다
+- [x] S1: 목표 하나로 PM→Dev→Review 파이프라인이 자동 실행되고 대시보드에서 관측된다
+      (2026-08-17: plan→auto-gate→build(claude, cwd)→judge 3/3 PASS, hello.txt 정확 생성)
+- [x] S2: 위험한 스텝에서 휴먼 게이트가 발동하고, 승인하면 재개된다
+      (2026-08-17: API + 대시보드 UI 양쪽 e2e — ego-browser로 윤허 클릭 → human 승인 → 재개 완료)
+- [~] S3: 모델을 Claude→다른 모델로 문자열 하나로 교체해 같은 파이프라인이 돈다
+      (게이트웨이 어댑터 계약 테스트 통과 — 모델 문자열 스위칭/인증/에러. 실 호출은 AI_GATEWAY_API_KEY 필요: vercel.com/ai-gateway에서 발급 후 env 설정)
+- [x] S4: planner/executor 모델 이원화가 실제로 동작한다
+      (2026-08-17: planner tier→opus, executor tier→sonnet 라우팅이 세션에 기록·대시보드 표시)
+- [~] S5: cmux 포크 개발 워크플로우(빌드/upstream 머지)가 돌아간다
+      (upstream 머지 ✓ scripts/sync-upstream.sh — 태그 빌드는 진행 중)
+- [x] S6: 브라우저 작업(ego-browser)이 파이프라인 스텝으로 실행된다
+      (2026-08-17: tool:browser 노드가 example.com 제목/헤딩 정확 보고)
+- [x] S7: claude + codex 멀티 에이전트가 같은 그래프에서 협업한다
+      (2026-08-17: claude(장인) add.py 작성/실행 → codex(감찰) PASS 리뷰)
+- [x] S8: AI가 그래프를 직접 설계한다 (template=auto, 재상 planner 모델의 graph engineering)
