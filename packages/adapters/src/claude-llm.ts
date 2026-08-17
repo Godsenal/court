@@ -21,10 +21,13 @@ export function createClaudeLlm(bin?: string): LlmCall {
         system,
         "--disallowedTools",
         "Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Agent,Task,NotebookEdit",
+        // Pure completion: never loop trying to reach for tools it doesn't have.
+        "--max-turns",
+        "1",
       ],
       { stdout: "pipe", stderr: "pipe", env: { ...process.env } },
     );
-    const timer = setTimeout(() => proc.kill(), 5 * 60 * 1000);
+    const timer = setTimeout(() => proc.kill(), 10 * 60 * 1000);
     const [stdout, stderr, code] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),

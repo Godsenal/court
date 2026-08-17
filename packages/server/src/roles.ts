@@ -54,11 +54,12 @@ export const BUILTIN_ROLES: Role[] = [
     systemPrompt:
       "You are a thorough researcher. Verify claims against sources, distinguish confirmed facts from speculation, " +
       "and return structured findings.",
+    // Researchers get real research tools (search/read) but can never mutate.
     policy: {
       models: { planner: PLANNER, executor: EXECUTOR, cheap: CHEAP },
-      runner: "llm",
+      runner: "claude",
       autoApproveBelow: "low",
-      disallowedTools: ["Edit", "Write", "NotebookEdit"],
+      disallowedTools: ["Edit", "Write", "NotebookEdit", "Bash"],
     },
   },
 ];
