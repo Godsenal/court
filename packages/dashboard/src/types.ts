@@ -26,7 +26,7 @@ export interface NodeState {
   error?: string;
   startedAt?: string;
   endedAt?: string;
-  session?: { runner: string; sessionId?: string; cmuxWorkspaceId?: string; pid?: number };
+  session?: { runner: string; model?: string; sessionId?: string; cmuxWorkspaceId?: string; pid?: number };
 }
 
 export interface RunDetailData {

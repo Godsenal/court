@@ -227,6 +227,13 @@ export class Engine {
     const model = spec.model ?? role.policy.models[spec.tier] ?? DEFAULT_MODEL;
     const prompt = interpolate(spec.prompt, { ...this.vars(runId), ...extraVars });
     this.emit({ type: "node.status", runId, nodeId: spec.id, status: "running", at: this.now() });
+    this.emit({
+      type: "node.session",
+      runId,
+      nodeId: spec.id,
+      session: { runner: spec.runner ?? role.policy.runner, model },
+      at: this.now(),
+    });
     const output = await this.withSlot(() =>
       this.deps.agent.run({
         runId,

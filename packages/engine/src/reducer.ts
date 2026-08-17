@@ -38,7 +38,8 @@ export function reduce(state: RunState | undefined, event: RunEvent): RunState {
     }
     case "node.session": {
       const s = must(state);
-      return withNode(s, event.nodeId, { session: event.session }, event.at);
+      const prev = s.nodes[event.nodeId]?.session;
+      return withNode(s, event.nodeId, { session: { ...prev, ...event.session } }, event.at);
     }
     case "node.output": {
       const s = must(state);

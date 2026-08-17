@@ -44,6 +44,9 @@ function NodeCard({ runId, node }: { runId: string; node: NodeState }) {
             {node.session?.runner && (
               <span className="rounded bg-panel-2 px-1.5 py-0.5 font-mono text-[11px] text-dim">{node.session.runner}</span>
             )}
+            {node.session?.model && (
+              <span className="rounded bg-panel-2 px-1.5 py-0.5 font-mono text-[11px] text-sky/80">{node.session.model}</span>
+            )}
           </div>
           <span className="font-mono text-[11px] text-dim">{node.spec.id}</span>
         </div>

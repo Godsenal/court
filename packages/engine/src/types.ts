@@ -144,6 +144,8 @@ export interface NodeState {
 
 export interface AgentSessionRef {
   runner: string;
+  /** Resolved model for this step (records planner/executor routing). */
+  model?: ModelId;
   sessionId?: string;
   cmuxWorkspaceId?: string;
   pid?: number;
