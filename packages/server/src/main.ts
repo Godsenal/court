@@ -1,0 +1,156 @@
+import { Engine, type RunEvent, type RunState } from "@court/engine";
+import {
+  ClaudeAgentExecutor,
+  CmuxClient,
+  CodexAgentExecutor,
+  DefaultToolExecutor,
+  RoutingAgentExecutor,
+  createGatewayLlm,
+} from "@court/adapters";
+import { RunStore } from "./store.ts";
+import { loadRoles } from "./roles.ts";
+import { buildMission, type MissionInput } from "./templates.ts";
+
+const PORT = Number(process.env.COURT_PORT ?? 8433);
+
+const store = new RunStore();
+const roles = loadRoles();
+const cmux = new CmuxClient();
+const llm = createGatewayLlm();
+
+const sockets = new Set<Bun.ServerWebSocket<unknown>>();
+function broadcast(event: RunEvent, state: RunState): void {
+  const message = JSON.stringify({ type: "run.event", event, run: summarize(state) });
+  for (const ws of sockets) ws.send(message);
+}
+
+const engine = new Engine({
+  agent: new RoutingAgentExecutor(
+    { claude: new ClaudeAgentExecutor(), codex: new CodexAgentExecutor() },
+    llm,
+  ),
+  tool: new DefaultToolExecutor({}),
+  llm,
+  gatekeeper: {
+    // Engine already auto-approved by policy; here we notify the human and wait.
+    request: async (req) => {
+      void cmux
+        .notify({
+          title: `👑 승인 필요: ${req.question}`,
+          subtitle: `risk=${req.risk} · ${req.runId}`,
+          body: req.context.slice(0, 300),
+        })
+        .catch(() => {});
+      return null; // wait for POST /api/runs/:id/gates/:nodeId
+    },
+  },
+  roles,
+  sink: (event, state) => {
+    store.append(event);
+    broadcast(event, state);
+  },
+});
+
+// Rehydrate persisted runs so the dashboard shows history after restart.
+for (const runId of store.listRunIds()) {
+  try {
+    engine.hydrate(store.load(runId));
+  } catch (e) {
+    console.error(`[hydrate] ${runId}: ${e}`);
+  }
+}
+
+function summarize(run: RunState) {
+  const nodes = Object.values(run.nodes);
+  return {
+    runId: run.runId,
+    title: run.mission.title,
+    goal: run.mission.goal,
+    status: run.status,
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt,
+    nodeCount: nodes.length,
+    done: nodes.filter((n) => n.status === "completed").length,
+    waiting: nodes.filter((n) => n.status === "waiting_human").map((n) => n.spec.id),
+  };
+}
+
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
+  });
+}
+
+const server = Bun.serve({
+  port: PORT,
+  fetch: async (req, srv) => {
+    const url = new URL(req.url);
+    const path = url.pathname;
+
+    if (path === "/ws" && srv.upgrade(req)) return undefined as unknown as Response;
+
+    if (req.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "GET,POST,OPTIONS",
+          "access-control-allow-headers": "content-type",
+        },
+      });
+    }
+
+    if (path === "/api/health") return json({ ok: true, cmux: await cmux.available() });
+
+    if (path === "/api/roles") return json([...roles.values()]);
+
+    if (path === "/api/runs" && req.method === "GET") {
+      return json(engine.listRuns().map(summarize));
+    }
+
+    const runMatch = path.match(/^\/api\/runs\/([^/]+)$/);
+    if (runMatch && req.method === "GET") {
+      const run = engine.getRun(runMatch[1]!);
+      return run ? json(run) : json({ error: "not found" }, 404);
+    }
+
+    if (path === "/api/missions" && req.method === "POST") {
+      const input = (await req.json()) as MissionInput;
+      if (!input.goal) return json({ error: "goal required" }, 400);
+      const mission = buildMission(input);
+      const run = engine.start(mission);
+      return json(summarize(run), 201);
+    }
+
+    const gateMatch = path.match(/^\/api\/runs\/([^/]+)\/gates\/([^/]+)$/);
+    if (gateMatch && req.method === "POST") {
+      const body = (await req.json()) as { approved: boolean; note?: string };
+      try {
+        engine.resolveGate(gateMatch[1]!, gateMatch[2]!, body.approved, body.note);
+        return json({ ok: true });
+      } catch (e) {
+        return json({ error: String(e) }, 409);
+      }
+    }
+
+    const cancelMatch = path.match(/^\/api\/runs\/([^/]+)\/cancel$/);
+    if (cancelMatch && req.method === "POST") {
+      engine.cancel(cancelMatch[1]!);
+      return json({ ok: true });
+    }
+
+    return json({ error: "not found" }, 404);
+  },
+  websocket: {
+    open: (ws) => {
+      sockets.add(ws);
+      ws.send(JSON.stringify({ type: "snapshot", runs: engine.listRuns().map(summarize) }));
+    },
+    close: (ws) => {
+      sockets.delete(ws);
+    },
+    message: () => {},
+  },
+});
+
+console.log(`⚖️  court server on http://localhost:${server.port}`);

@@ -4,6 +4,17 @@
     "": {
       "name": "court",
     },
+    "packages/adapters": {
+      "name": "@court/adapters",
+      "version": "0.1.0",
+      "dependencies": {
+        "@court/engine": "workspace:*",
+      },
+      "devDependencies": {
+        "bun-types": "latest",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/engine": {
       "name": "@court/engine",
       "version": "0.1.0",
@@ -12,9 +23,25 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/server": {
+      "name": "@court/server",
+      "version": "0.1.0",
+      "dependencies": {
+        "@court/adapters": "workspace:*",
+        "@court/engine": "workspace:*",
+      },
+      "devDependencies": {
+        "bun-types": "latest",
+        "typescript": "^5.6.0",
+      },
+    },
   },
   "packages": {
+    "@court/adapters": ["@court/adapters@workspace:packages/adapters"],
+
     "@court/engine": ["@court/engine@workspace:packages/engine"],
+
+    "@court/server": ["@court/server@workspace:packages/server"],
 
     "@types/node": ["@types/node@26.2.0", "https://npm-registry-proxy.kr.wekarrot.net/@types/node/-/node-26.2.0.tgz", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
 
