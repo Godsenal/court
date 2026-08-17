@@ -15,6 +15,17 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/cli": {
+      "name": "@court/cli",
+      "version": "0.1.0",
+      "bin": {
+        "court": "./src/main.ts",
+      },
+      "devDependencies": {
+        "bun-types": "latest",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/engine": {
       "name": "@court/engine",
       "version": "0.1.0",
@@ -38,6 +49,8 @@
   },
   "packages": {
     "@court/adapters": ["@court/adapters@workspace:packages/adapters"],
+
+    "@court/cli": ["@court/cli@workspace:packages/cli"],
 
     "@court/engine": ["@court/engine@workspace:packages/engine"],
 

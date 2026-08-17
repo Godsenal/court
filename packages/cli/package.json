@@ -1,0 +1,8 @@
+{
+  "name": "@court/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "court": "./src/main.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "devDependencies": { "bun-types": "latest", "typescript": "^5.6.0" }
+}
