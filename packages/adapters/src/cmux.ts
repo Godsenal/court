@@ -29,8 +29,11 @@ export class CmuxClient {
   async available(): Promise<boolean> {
     try {
       const proc = Bun.spawn([this.bin, "ping"], { stdout: "pipe", stderr: "pipe" });
-      return (await proc.exited) === 0;
-    } catch {
+      const [code, stderr] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
+      if (code !== 0) console.error(`[cmux] ping exit ${code}: ${stderr.slice(0, 300)}`);
+      return code === 0;
+    } catch (e) {
+      console.error(`[cmux] ping spawn failed: ${e}`);
       return false;
     }
   }
