@@ -14,6 +14,10 @@ import { loadRoles } from "./roles.ts";
 import { buildMission, type MissionInput } from "./templates.ts";
 import { planGraph } from "./planner.ts";
 import { startScheduler } from "./scheduler.ts";
+import { FeedGateBridge } from "./feed-bridge.ts";
+
+// Assigned after the engine exists; the gatekeeper closure reads it lazily.
+let feedBridge: FeedGateBridge | undefined;
 
 const PORT = Number(process.env.COURT_PORT ?? 8433);
 
@@ -100,7 +104,8 @@ const engine = new Engine({
   }),
   llm,
   gatekeeper: {
-    // Engine already auto-approved by policy; here we notify the human and wait.
+    // Engine already auto-approved by policy; here we surface the gate to the
+    // human (desktop notification + cmux Feed question card) and wait.
     request: async (req) => {
       void cmux
         .notify({
@@ -109,7 +114,8 @@ const engine = new Engine({
           body: req.context.slice(0, 300),
         })
         .catch(() => {});
-      return null; // wait for POST /api/runs/:id/gates/:nodeId
+      void feedBridge?.push(req);
+      return null; // resolved via dashboard, CLI, or the Feed bridge
     },
   },
   roles,
@@ -133,6 +139,10 @@ engine.recover();
 startScheduler((mission) => {
   engine.start(buildMission(mission));
 });
+
+// cmux Feed ↔ gate bridge (one-click 윤허/불허 from the Feed sidebar).
+feedBridge = new FeedGateBridge(cmux, engine);
+feedBridge.start();
 
 function summarize(run: RunState) {
   const nodes = Object.values(run.nodes);

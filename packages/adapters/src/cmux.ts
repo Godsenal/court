@@ -54,6 +54,11 @@ export class CmuxClient {
     return (await this.exec(args)).trim();
   }
 
+  /** Raw v2 socket call: `cmux rpc <method> <json>`. */
+  async rpc(method: string, params: unknown): Promise<string> {
+    return this.exec(["rpc", method, JSON.stringify(params)]);
+  }
+
   /** Desktop notification through cmux (visible on Mac + forwarded by cmux-remote). */
   async notify(opts: { title: string; subtitle?: string; body?: string }): Promise<void> {
     const args = ["notify", "--title", opts.title];
