@@ -60,6 +60,29 @@ export class Engine {
     if (state) this.runs.set(state.runId, state);
   }
 
+  /**
+   * After hydrating: agent work that was in flight when the server died cannot
+   * be resumed, so fail those nodes, cascade skips, and settle run status.
+   * Gates stay waiting — they are resolvable after restart.
+   */
+  recover(): void {
+    for (const run of this.runs.values()) {
+      if (run.status !== "running" && run.status !== "waiting_human") continue;
+      for (const node of Object.values(run.nodes)) {
+        if (node.status === "running") {
+          this.emit({
+            type: "node.failed",
+            runId: run.runId,
+            nodeId: node.spec.id,
+            error: "interrupted by server restart",
+            at: this.now(),
+          });
+        }
+      }
+      this.tick(run.runId);
+    }
+  }
+
   start(mission: Mission): RunState {
     const runId = mission.id;
     validateGraph(mission.graph);

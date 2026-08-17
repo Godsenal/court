@@ -103,6 +103,7 @@ for (const runId of store.listRunIds()) {
     console.error(`[hydrate] ${runId}: ${e}`);
   }
 }
+engine.recover();
 
 function summarize(run: RunState) {
   const nodes = Object.values(run.nodes);
@@ -124,6 +125,18 @@ function json(data: unknown, status = 200): Response {
     status,
     headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
   });
+}
+
+const DASHBOARD_DIST = new URL("../../dashboard/dist/", import.meta.url).pathname;
+
+async function serveDashboard(path: string): Promise<Response> {
+  const rel = path === "/" ? "index.html" : path.slice(1);
+  let file = Bun.file(DASHBOARD_DIST + rel);
+  if (!(await file.exists())) file = Bun.file(DASHBOARD_DIST + "index.html");
+  if (!(await file.exists())) {
+    return new Response("dashboard not built — run: bun run --filter '@court/dashboard' build", { status: 404 });
+  }
+  return new Response(file);
 }
 
 const server = Bun.serve({
@@ -182,6 +195,8 @@ const server = Bun.serve({
       engine.cancel(cancelMatch[1]!);
       return json({ ok: true });
     }
+
+    if (!path.startsWith("/api/")) return serveDashboard(path);
 
     return json({ error: "not found" }, 404);
   },
