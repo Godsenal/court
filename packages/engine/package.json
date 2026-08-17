@@ -1,0 +1,8 @@
+{
+  "name": "@court/engine",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "devDependencies": { "bun-types": "latest", "typescript": "^5.6.0" }
+}

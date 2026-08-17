@@ -1,0 +1,11 @@
+{
+  "name": "court",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "dev": "bun run --filter '@court/server' dev"
+  }
+}
