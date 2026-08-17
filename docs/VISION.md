@@ -47,8 +47,9 @@ palace(관제 데스크탑) · loops(자율 루프) · cmux-remote(모바일) �
       (게이트웨이 어댑터 계약 테스트 통과 — 모델 문자열 스위칭/인증/에러. 실 호출은 AI_GATEWAY_API_KEY 필요: vercel.com/ai-gateway에서 발급 후 env 설정)
 - [x] S4: planner/executor 모델 이원화가 실제로 동작한다
       (2026-08-17: planner tier→opus, executor tier→sonnet 라우팅이 세션에 기록·대시보드 표시)
-- [~] S5: cmux 포크 개발 워크플로우(빌드/upstream 머지)가 돌아간다
-      (upstream 머지 ✓ scripts/sync-upstream.sh — 태그 빌드는 진행 중)
+- [x] S5: cmux 포크 개발 워크플로우(빌드/upstream 머지)가 돌아간다
+      (2026-08-17: sync-upstream.sh 태그 기반 머지 ✓, v0.64.22 기반 godsenal 브랜치 +
+      Xcode16 호환 캐리 패치로 `reload.sh --tag court-fork` Debug 빌드 성공 ✓ — FORK.md 참고)
 - [x] S6: 브라우저 작업(ego-browser)이 파이프라인 스텝으로 실행된다
       (2026-08-17: tool:browser 노드가 example.com 제목/헤딩 정확 보고)
 - [x] S7: claude + codex 멀티 에이전트가 같은 그래프에서 협업한다
