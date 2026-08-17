@@ -22,6 +22,12 @@ body { background: var(--color-ink); color: var(--color-fg); }
 @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 .animate-working { animation: pulse-soft 1.6s ease-in-out infinite; }
 
+/* interaction grammar adapted from beautifului.dev (MIT, Shane Levine) */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pop-in { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-up { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
