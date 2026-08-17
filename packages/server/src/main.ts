@@ -15,6 +15,7 @@ import { buildMission, type MissionInput } from "./templates.ts";
 import { planGraph } from "./planner.ts";
 import { startScheduler } from "./scheduler.ts";
 import { FeedGateBridge } from "./feed-bridge.ts";
+import { computeStats } from "./stats.ts";
 
 // Assigned after the engine exists; the gatekeeper closure reads it lazily.
 let feedBridge: FeedGateBridge | undefined;
@@ -202,6 +203,10 @@ const server = Bun.serve({
 
     if (path === "/api/runs" && req.method === "GET") {
       return json(engine.listRuns().map(summarize));
+    }
+
+    if (path === "/api/stats" && req.method === "GET") {
+      return json(computeStats(engine.listRuns()));
     }
 
     const runMatch = path.match(/^\/api\/runs\/([^/]+)$/);
