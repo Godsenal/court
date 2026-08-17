@@ -56,6 +56,12 @@ palace(관제 데스크탑) · loops(자율 루프) · cmux-remote(모바일) �
       (2026-08-17: claude(장인) add.py 작성/실행 → codex(감찰) PASS 리뷰)
 - [x] S8: AI가 그래프를 직접 설계한다 (template=auto, 재상 planner 모델의 graph engineering)
       (2026-08-17: research→draft→judge→final 그래프 설계·완주)
+- [x] S10: 대시보드 v2 — codex desktop급 관제 (2026-08-17)
+      실시간 토큰 스트리밍(stream-json→node.progress→WS 로컬 적용) · 팔로우업 세션 재개
+      (claude --resume, 맥락 연속 검증) · 실패 노드 재시도(하위 skip 부활 검증) ·
+      취소/보관 · git diff 모달 · 지시 열람 · 역할 편집기 · 반복 어명 토글 · ⌘K 팔레트.
+      부수 수확: 학사 역할이 도구 없는 llm 러너로 리서치를 받다 47턴 스래싱하는 버그 발견
+      → claude 러너 + 검색/읽기 허용 + 수정 도구 구조 차단으로 수정, llm 폴백 --max-turns 1.
 - [x] S9: 메타 도그푸드 — court가 court 자신에 실제 기능을 구현한다
       (2026-08-17: /api/stats — 재상 계획 → cmux Feed 원클릭 승인 → 장인 구현 →
       결정적 체크(bun test+tsc) + 감찰 패널 검수 → 머지. run-msx3x0k1-vc2q)
