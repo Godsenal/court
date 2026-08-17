@@ -3,6 +3,7 @@ import { api } from "../api.ts";
 import type { RunSummary } from "../types.ts";
 
 const TEMPLATES = [
+  { id: "auto", label: "자동 설계", desc: "재상이 목표에 맞는 그래프를 직접 설계" },
   { id: "pipeline", label: "파이프라인", desc: "계획 → 승인 → 구현 → 검수" },
   { id: "breakdown", label: "분할 정복", desc: "작업 분해 → 병렬 구현 → 검수" },
   { id: "polish", label: "반복 개선", desc: "만족할 때까지 개선 루프" },
@@ -51,7 +52,7 @@ export function NewMission({ onStarted }: { onStarted: (runId: string) => void }
         className="mt-5 w-full rounded-xl border border-line bg-panel px-4 py-3 text-sm outline-none placeholder:text-dim/60 focus:border-gold/50"
       />
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         {TEMPLATES.map((t) => (
           <button
             key={t.id}

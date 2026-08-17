@@ -5,7 +5,7 @@ export interface MissionInput {
   goal: string;
   /** Repo the developer works in (claude runner cwd). */
   cwd?: string;
-  template?: "pipeline" | "breakdown" | "polish" | "custom";
+  template?: "pipeline" | "breakdown" | "polish" | "custom" | "auto";
   /** For template=custom: a full graph. */
   graph?: GraphSpec;
   /** Gate risk for the plan-approval step; "low" auto-approves with default roles. */
@@ -84,5 +84,7 @@ function buildTemplate(input: MissionInput): GraphSpec {
       };
     case "custom":
       throw new Error("template=custom requires a graph");
+    case "auto":
+      throw new Error("template=auto is resolved by the planner before buildMission");
   }
 }

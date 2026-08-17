@@ -11,6 +11,7 @@ import { createClaudeLlm } from "@court/adapters";
 import { RunStore } from "./store.ts";
 import { loadRoles } from "./roles.ts";
 import { buildMission, type MissionInput } from "./templates.ts";
+import { planGraph } from "./planner.ts";
 
 const PORT = Number(process.env.COURT_PORT ?? 8433);
 
@@ -174,6 +175,16 @@ const server = Bun.serve({
     if (path === "/api/missions" && req.method === "POST") {
       const input = (await req.json()) as MissionInput;
       if (!input.goal) return json({ error: "goal required" }, 400);
+      if (input.template === "auto") {
+        // Graph engineering: a planner model designs the graph for this goal.
+        const plannerModel = roles.get("pm")?.policy.models.planner ?? "anthropic/claude-opus-4.5";
+        try {
+          input.graph = await planGraph(llm, input.goal, input.cwd, plannerModel);
+          input.template = "custom";
+        } catch (e) {
+          return json({ error: `planner failed: ${e instanceof Error ? e.message : e}` }, 502);
+        }
+      }
       const mission = buildMission(input);
       const run = engine.start(mission);
       return json(summarize(run), 201);
