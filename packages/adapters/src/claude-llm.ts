@@ -1,16 +1,16 @@
 import type { LlmCall } from "@court/engine";
-import { parseClaudeJson, toClaudeCliModel } from "./claude.ts";
+import { parseClaudeJson, resolveClaudeBin, toClaudeCliModel } from "./claude.ts";
 
 /**
  * Plain completion via the local claude CLI (`claude -p`), used when no
  * AI_GATEWAY_API_KEY is configured. Tools are disabled so it behaves like a
  * pure LLM call on the user's Claude subscription.
  */
-export function createClaudeLlm(bin = "claude"): LlmCall {
+export function createClaudeLlm(bin?: string): LlmCall {
   return async (model, system, prompt) => {
     const proc = Bun.spawn(
       [
-        bin,
+        bin ?? resolveClaudeBin(),
         "-p",
         prompt,
         "--output-format",

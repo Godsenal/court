@@ -37,7 +37,7 @@ export class ClaudeAgentExecutor implements AgentExecutor {
   }
 
   private async runHeadless(req: AgentRunRequest): Promise<string> {
-    const bin = this.opts.bin ?? "claude";
+    const bin = this.opts.bin ?? resolveClaudeBin();
     const model = toClaudeCliModel(req.model);
     const args = [
       "-p",
@@ -88,7 +88,7 @@ export class ClaudeAgentExecutor implements AgentExecutor {
     const runnerFile = join(workDir, `${stamp}.sh`);
     writeFileSync(promptFile, req.prompt);
     writeFileSync(systemFile, req.role.systemPrompt);
-    const bin = this.opts.bin ?? "claude";
+    const bin = this.opts.bin ?? resolveClaudeBin();
     const extra = (this.opts.extraArgs ?? []).map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ");
     writeFileSync(
       runnerFile,
@@ -117,6 +117,17 @@ echo "\\n✓ court step finished — this terminal can be closed."
     if (exitCode !== 0) throw new Error(`claude (visible) exited ${exitCode}: ${stdout.slice(0, 2000)}`);
     return parseClaudeJson(stdout, req.onSession);
   }
+}
+
+/**
+ * Resolve a stable claude binary. cmux terminal sessions put a session-scoped
+ * shim first on PATH which dies with the session — prefer durable locations.
+ */
+export function resolveClaudeBin(): string {
+  if (process.env.CLAUDE_BIN) return process.env.CLAUDE_BIN;
+  const local = join(homedir(), ".local", "bin", "claude");
+  if (existsSync(local)) return local;
+  return Bun.which("claude") ?? "claude";
 }
 
 /** `anthropic/claude-sonnet-4.5` → `claude-sonnet-4.5`; pass through otherwise. */
