@@ -10,8 +10,8 @@
   --color-fg: #e9ecf2;
   --color-dim: #8c95a8;
   --color-faint: #5a6373;
-  --color-gold: #d9a93f;
-  --color-gold-deep: #b8860b;
+  --color-accent: #538cf5;
+  --color-accent-deep: #3a6fd8;
   --color-jade: #47c97e;
   --color-ruby: #f26d6d;
   --color-sky: #5fa8fa;
@@ -24,7 +24,7 @@ html, body, #root { height: 100%; }
 body { background: var(--color-ink); color: var(--color-fg); font-size: 14px; -webkit-font-smoothing: antialiased; }
 
 /* visible keyboard focus, everywhere */
-:focus-visible { outline: 2px solid color-mix(in srgb, var(--color-gold) 70%, transparent); outline-offset: 1px; border-radius: 6px; }
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, transparent); outline-offset: 1px; border-radius: 6px; }
 :focus:not(:focus-visible) { outline: none; }
 
 @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -40,7 +40,7 @@ body { background: var(--color-ink); color: var(--color-fg); font-size: 14px; -w
 
 .stream-caret::after {
   content: "▍";
-  color: var(--color-gold);
+  color: var(--color-accent);
   animation: caret-blink 1s steps(1) infinite;
 }
 .shimmer-line {

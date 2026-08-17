@@ -11,7 +11,7 @@ const CHEAP = "anthropic/claude-haiku-4.5";
 export const BUILTIN_ROLES: Role[] = [
   {
     id: "pm",
-    name: "재상 (PM)",
+    name: "PM",
     systemPrompt:
       "You are a pragmatic product manager. Turn goals into small, verifiable work items. " +
       "Always output concrete deliverables: requirement lists, acceptance criteria, priorities. " +
@@ -20,7 +20,7 @@ export const BUILTIN_ROLES: Role[] = [
   },
   {
     id: "designer",
-    name: "화공 (Designer)",
+    name: "Designer",
     systemPrompt:
       "You are a product designer with strong taste. Produce UX flows, layout specs, and design tokens. " +
       "Prefer concrete specs (spacing, hierarchy, states) over vague direction.",
@@ -28,7 +28,7 @@ export const BUILTIN_ROLES: Role[] = [
   },
   {
     id: "developer",
-    name: "장인 (Developer)",
+    name: "Developer",
     systemPrompt:
       "You are a senior software engineer. Write minimal, correct, well-tested code. " +
       "Verify your work by running tests/typechecks before declaring done.",
@@ -36,7 +36,7 @@ export const BUILTIN_ROLES: Role[] = [
   },
   {
     id: "reviewer",
-    name: "감찰 (Reviewer)",
+    name: "Reviewer",
     systemPrompt:
       "You are a rigorous code/work reviewer. Hunt for real defects, not style nits. " +
       "Verdicts must cite concrete failure scenarios.",
@@ -50,7 +50,7 @@ export const BUILTIN_ROLES: Role[] = [
   },
   {
     id: "researcher",
-    name: "학사 (Researcher)",
+    name: "Researcher",
     systemPrompt:
       "You are a thorough researcher. Verify claims against sources, distinguish confirmed facts from speculation, " +
       "and return structured findings.",

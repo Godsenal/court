@@ -55,7 +55,7 @@ try {
           planGateRisk: flag(args, "risk"),
         }),
       });
-      console.log(`👑 mission started: ${run.runId}`);
+      console.log(`task started: ${run.runId}`);
       console.log(`   court show ${run.runId}`);
       break;
     }
@@ -88,7 +88,7 @@ try {
         method: "POST",
         body: JSON.stringify({ approved: cmd === "approve", note: noteParts.join(" ") || undefined }),
       });
-      console.log(cmd === "approve" ? "✓ approved" : "✗ denied");
+      console.log(cmd === "approve" ? "approved" : "denied");
       break;
     }
     case "cancel": {

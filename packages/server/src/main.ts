@@ -110,7 +110,7 @@ const engine = new Engine({
     request: async (req) => {
       void cmux
         .notify({
-          title: `👑 승인 필요: ${req.question}`,
+          title: `Court 승인 필요: ${req.question}`,
           subtitle: `risk=${req.risk} · ${req.runId}`,
           body: req.context.slice(0, 300),
         })
@@ -278,7 +278,7 @@ const server = Bun.serve({
           kind: "agent",
           id: `follow-${seq}`,
           dependsOn: [],
-          title: `💬 팔로우업 ${seq}`,
+          title: `팔로우업 ${seq}`,
           role: target?.spec.kind === "agent" ? target.spec.role : "developer",
           tier: "executor",
           cwd: target?.spec.kind === "agent" ? target.spec.cwd : undefined,

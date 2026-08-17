@@ -46,7 +46,7 @@ function buildTemplate(input: MissionInput): GraphSpec {
             prompt: `Implement this plan. Verify with tests/typecheck where possible.${cwdNote(input)}\n\nGoal:\n${input.goal}\n\nPlan:\n{{plan}}`,
           },
           {
-            kind: "judge", id: "review", dependsOn: ["build"], subject: "build", votes: 3, tier: "cheap", role: "reviewer", title: "검수",
+            kind: "judge", id: "review", dependsOn: ["build"], subject: "build", votes: 3, tier: "cheap", role: "reviewer", title: "검토",
             criteria: `The work must plausibly satisfy the goal and the plan's acceptance criteria.\nGoal: ${input.goal}`,
           },
         ],
@@ -64,7 +64,7 @@ function buildTemplate(input: MissionInput): GraphSpec {
             template: { kind: "agent", role: "developer", tier: "executor", cwd: input.cwd, prompt: `Overall goal:\n${input.goal}${cwdNote(input)}\n\nYour task: {{item}}\n\nDo it and report the result.` },
           },
           {
-            kind: "judge", id: "review", dependsOn: ["work"], subject: "work", votes: 3, tier: "cheap", role: "reviewer", title: "검수",
+            kind: "judge", id: "review", dependsOn: ["work"], subject: "work", votes: 3, tier: "cheap", role: "reviewer", title: "검토",
             criteria: `All subtask results together must satisfy the goal.\nGoal: ${input.goal}`,
           },
         ],

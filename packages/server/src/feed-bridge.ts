@@ -30,11 +30,11 @@ export class FeedGateBridge {
           questions: [
             {
               question: req.question,
-              header: `court · risk=${req.risk}`,
+              header: `Court · risk=${req.risk}`,
               multiSelect: false,
               options: [
-                { label: "윤허", description: "승인하고 진행" },
-                { label: "불허", description: "이 단계에서 중단" },
+                { label: "승인", description: "계속 진행" },
+                { label: "거절", description: "이 단계에서 중단" },
               ],
             },
           ],

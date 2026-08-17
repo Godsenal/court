@@ -28,10 +28,10 @@ export function Palette({
 
   const actions: Action[] = useMemo(
     () => [
-      { id: "new", label: "📜 새 어명 내리기", hint: "⌘N", run: onCompose },
-      { id: "view-runs", label: "📜 어명 보기", run: () => onView("runs") },
-      { id: "view-roles", label: "🎭 신하(역할) 관리", run: () => onView("roles") },
-      { id: "view-schedules", label: "⏰ 반복 어명 관리", run: () => onView("schedules") },
+      { id: "new", label: "새 작업 시작", hint: "⌘N", run: onCompose },
+      { id: "view-runs", label: "작업 보기", run: () => onView("runs") },
+      { id: "view-roles", label: "역할 관리", run: () => onView("roles") },
+      { id: "view-schedules", label: "스케줄 관리", run: () => onView("schedules") },
     ],
     [onCompose, onView],
   );
@@ -83,7 +83,7 @@ export function Palette({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKey}
-          placeholder="명령 또는 어명 검색…"
+          placeholder="명령 또는 작업 검색…"
           className="w-full border-b border-line bg-transparent px-4 py-3 text-[14px] outline-none placeholder:text-faint"
         />
         <ul className="max-h-80 overflow-y-auto py-1.5">

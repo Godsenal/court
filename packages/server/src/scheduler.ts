@@ -44,7 +44,7 @@ export function startScheduler(submit: (mission: MissionInput, source: string) =
       writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
       console.log(`[scheduler] firing: ${schedule.name}`);
       try {
-        submit({ ...schedule.mission, title: `⏰ ${schedule.name}` }, schedule.name);
+        submit({ ...schedule.mission, title: `[스케줄] ${schedule.name}` }, schedule.name);
       } catch (e) {
         console.error(`[scheduler] ${schedule.name} failed to submit: ${e}`);
       }

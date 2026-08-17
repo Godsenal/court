@@ -22,7 +22,7 @@ export function SchedulesView({ onOpenRun }: { onOpenRun: (id: string) => void }
     setSchedules(next);
     try {
       await api("/schedules", { method: "PUT", body: JSON.stringify(next) });
-      toast("반복 어명 저장됨");
+      toast("스케줄 저장됨");
     } catch (e) {
       toast(String(e instanceof Error ? e.message : e), "err");
     }
@@ -31,9 +31,9 @@ export function SchedulesView({ onOpenRun }: { onOpenRun: (id: string) => void }
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="max-w-2xl">
-        <h2 className="text-[16px] font-semibold">⏰ 반복 어명</h2>
+        <h2 className="text-[16px] font-semibold">스케줄</h2>
         <p className="mt-0.5 text-[12px] text-faint">
-          주기마다 자동으로 실행되는 어명 — <code className="font-mono">~/.court/schedules.json</code>
+          주기적으로 자동 실행되는 작업 — <code className="font-mono">~/.court/schedules.json</code>
         </p>
 
         <ul className="mt-5 flex flex-col gap-2.5">
@@ -67,9 +67,9 @@ export function SchedulesView({ onOpenRun }: { onOpenRun: (id: string) => void }
             </li>
           ))}
         </ul>
-        {!schedules.length && <p className="mt-6 text-[13px] text-faint">등록된 반복 어명이 없습니다.</p>}
+        {!schedules.length && <p className="mt-6 text-[13px] text-faint">등록된 스케줄이 없습니다.</p>}
         <p className="mt-5 text-[11.5px] text-faint">
-          새 반복 어명은 <code className="font-mono">schedules.json</code>에 직접 추가하세요 — 형식: {"{ name, intervalHours, mission: { goal, template, cwd } }"}. 10분 주기로 반영됩니다.
+          새 스케줄은 <code className="font-mono">schedules.json</code>에 직접 추가하세요 — 형식: {"{ name, intervalHours, mission: { goal, template, cwd } }"}. 10분 주기로 반영됩니다.
         </p>
       </div>
     </div>

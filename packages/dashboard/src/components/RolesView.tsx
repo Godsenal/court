@@ -41,13 +41,13 @@ export function RolesView() {
   return (
     <div className="flex h-full">
       <aside className="w-60 shrink-0 overflow-y-auto border-r border-line bg-panel py-3">
-        <h2 className="px-4 pb-2 text-[15px] font-semibold">🎭 신하</h2>
+        <h2 className="px-4 pb-2 text-[15px] font-semibold">역할</h2>
         {roles.map((role) => (
           <button
             key={role.id}
             onClick={() => setSelected(role.id)}
             className={`block w-full px-4 py-2 text-left transition ${
-              selected === role.id ? "bg-panel-3 shadow-[inset_2px_0_0_var(--color-gold)]" : "hover:bg-panel-2"
+              selected === role.id ? "bg-panel-3 shadow-[inset_2px_0_0_var(--color-accent)]" : "hover:bg-panel-2"
             }`}
           >
             <span className="block text-[13px] font-medium">{role.name}</span>
@@ -64,7 +64,7 @@ export function RolesView() {
               <h3 className="text-[16px] font-semibold">{draft.name}</h3>
               <button
                 onClick={save}
-                className="rounded-lg bg-gold px-4 py-1.5 text-[13px] font-semibold text-ink transition hover:brightness-110"
+                className="rounded-lg bg-accent px-4 py-1.5 text-[13px] font-semibold text-ink transition hover:brightness-110"
               >
                 저장
               </button>
@@ -79,7 +79,7 @@ export function RolesView() {
                 value={draft.systemPrompt}
                 onChange={(e) => setDraft({ ...draft, systemPrompt: e.target.value })}
                 rows={6}
-                className="mt-1 w-full rounded-xl border border-line bg-ink/60 px-3.5 py-2.5 font-mono text-[12.5px] leading-relaxed outline-none focus:border-gold/50"
+                className="mt-1 w-full rounded-xl border border-line bg-ink/60 px-3.5 py-2.5 font-mono text-[12.5px] leading-relaxed outline-none focus:border-accent/50"
               />
             </label>
 
@@ -93,7 +93,7 @@ export function RolesView() {
                     onChange={(e) =>
                       setDraft({ ...draft, policy: { ...draft.policy, models: { ...draft.policy.models, [tier]: e.target.value } } })
                     }
-                    className="mt-1 w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 font-mono text-[11.5px] outline-none focus:border-gold/50"
+                    className="mt-1 w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 font-mono text-[11.5px] outline-none focus:border-accent/50"
                   />
                 </label>
               ))}
@@ -110,7 +110,7 @@ export function RolesView() {
                 <select
                   value={draft.policy.runner}
                   onChange={(e) => setDraft({ ...draft, policy: { ...draft.policy, runner: e.target.value } })}
-                  className="mt-1 block w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 text-[12.5px] outline-none focus:border-gold/50"
+                  className="mt-1 block w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 text-[12.5px] outline-none focus:border-accent/50"
                 >
                   <option value="llm">llm — 순수 완성 (도구 없음)</option>
                   <option value="claude">claude — Claude Code (파일·셸 접근)</option>
@@ -118,13 +118,13 @@ export function RolesView() {
                 </select>
               </label>
               <label className="block text-[12px] text-dim">
-                자동 결재 한도 (이 위험도 미만은 자동 통과)
+                자동 승인 한도 (이 위험도 미만은 자동 통과)
                 <select
                   value={draft.policy.autoApproveBelow}
                   onChange={(e) => setDraft({ ...draft, policy: { ...draft.policy, autoApproveBelow: e.target.value } })}
-                  className="mt-1 block w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 text-[12.5px] outline-none focus:border-gold/50"
+                  className="mt-1 block w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 text-[12.5px] outline-none focus:border-accent/50"
                 >
-                  <option value="low">low — 전부 결재 요청</option>
+                  <option value="low">low — 전부 승인 요청</option>
                   <option value="medium">medium — low만 자동</option>
                   <option value="high">high — medium까지 자동</option>
                   <option value="critical">critical — high까지 자동</option>
@@ -146,7 +146,7 @@ export function RolesView() {
                   })
                 }
                 placeholder="Edit, Write, Bash"
-                className="mt-1 w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 font-mono text-[11.5px] outline-none focus:border-gold/50"
+                className="mt-1 w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 font-mono text-[11.5px] outline-none focus:border-accent/50"
               />
             </label>
           </div>

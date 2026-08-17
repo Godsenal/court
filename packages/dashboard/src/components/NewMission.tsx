@@ -4,9 +4,9 @@ import type { RunSummary } from "../types.ts";
 import { useToast } from "./Toast.tsx";
 
 const TEMPLATES = [
-  { id: "auto", label: "자동 설계", desc: "재상이 목표에 맞는 그래프를 직접 설계" },
-  { id: "pipeline", label: "파이프라인", desc: "계획 → 결재 → 구현 → 검수" },
-  { id: "breakdown", label: "분할 정복", desc: "작업 분해 → 병렬 구현 → 검수" },
+  { id: "auto", label: "자동 설계", desc: "AI가 목표에 맞는 실행 그래프를 설계" },
+  { id: "pipeline", label: "파이프라인", desc: "계획 → 승인 → 구현 → 검토" },
+  { id: "breakdown", label: "분할 정복", desc: "작업 분해 → 병렬 구현 → 검토" },
   { id: "polish", label: "반복 개선", desc: "만족할 때까지 개선 루프" },
 ];
 
@@ -50,7 +50,7 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
         const next = [cwd.trim(), ...recentCwds().filter((c) => c !== cwd.trim())].slice(0, 8);
         localStorage.setItem(RECENT_KEY, JSON.stringify(next));
       }
-      toast(template === "auto" ? "재상이 그래프를 설계했습니다" : "어명을 내렸습니다");
+      toast("작업을 시작했습니다");
       onStarted(run.runId);
     } catch (e) {
       toast(String(e instanceof Error ? e.message : e), "err");
@@ -67,8 +67,8 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
         style={{ animation: "fade-up 250ms cubic-bezier(0.23,1,0.32,1) both" }}
       >
         <header className="border-b border-line px-5 py-3.5">
-          <h3 className="text-[15px] font-semibold">📜 새 어명</h3>
-          <p className="mt-0.5 text-[12px] text-faint">목표를 내리면 신하들이 알아서 일합니다</p>
+          <h3 className="text-[15px] font-semibold">새 작업</h3>
+          <p className="mt-0.5 text-[12px] text-faint">목표를 입력하면 에이전트 팀이 실행합니다</p>
         </header>
         <div className="p-5">
           <textarea
@@ -80,7 +80,7 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
             }}
             placeholder="예: kr-it-jobs 저장소에 다크모드 토글을 추가해줘"
             rows={3}
-            className="w-full rounded-xl border border-line bg-ink/60 px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none placeholder:text-faint focus:border-gold/50"
+            className="w-full rounded-xl border border-line bg-ink/60 px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none placeholder:text-faint focus:border-accent/50"
           />
 
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -89,7 +89,7 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
                 key={t.id}
                 onClick={() => setTemplate(t.id)}
                 className={`rounded-xl border px-3 py-2 text-left transition ${
-                  template === t.id ? "border-gold/60 bg-gold/10" : "border-line bg-panel-2 hover:bg-panel-3"
+                  template === t.id ? "border-accent/60 bg-accent/10" : "border-line bg-panel-2 hover:bg-panel-3"
                 }`}
               >
                 <span className="block text-[13px] font-medium">{t.label}</span>
@@ -106,7 +106,7 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
                 value={cwd}
                 onChange={(e) => setCwd(e.target.value)}
                 placeholder="/Users/lth/LTH/…"
-                className="mt-1 w-full rounded-lg border border-line bg-ink/60 px-3 py-2 font-mono text-[12px] text-fg outline-none placeholder:text-faint focus:border-gold/50"
+                className="mt-1 w-full rounded-lg border border-line bg-ink/60 px-3 py-2 font-mono text-[12px] text-fg outline-none placeholder:text-faint focus:border-accent/50"
               />
               <datalist id="recent-cwds">
                 {recentCwds().map((c) => (
@@ -115,14 +115,14 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
               </datalist>
             </label>
             <label className="text-[11.5px] text-dim">
-              계획 결재
+              계획 승인
               <select
                 value={risk}
                 onChange={(e) => setRisk(e.target.value)}
-                className="mt-1 block rounded-lg border border-line bg-ink/60 px-3 py-2 text-[12.5px] text-fg outline-none focus:border-gold/50"
+                className="mt-1 block rounded-lg border border-line bg-ink/60 px-3 py-2 text-[12.5px] text-fg outline-none focus:border-accent/50"
               >
                 <option value="low">자동 진행</option>
-                <option value="high">내가 결재</option>
+                <option value="high">직접 승인</option>
               </select>
             </label>
           </div>
@@ -139,9 +139,9 @@ export function NewMission({ onClose, onStarted }: { onClose: () => void; onStar
             <button
               disabled={busy || !goal.trim()}
               onClick={submit}
-              className="rounded-xl bg-gold px-5 py-2 text-[13.5px] font-semibold text-ink transition hover:brightness-110 disabled:opacity-40"
+              className="rounded-xl bg-accent px-5 py-2 text-[13.5px] font-semibold text-ink transition hover:brightness-110 disabled:opacity-40"
             >
-              {busy ? (template === "auto" ? "재상이 설계 중…" : "하명 중…") : "어명 내리기"}
+              {busy ? (template === "auto" ? "그래프 설계 중…" : "시작 중…") : "작업 시작"}
             </button>
           </div>
         </div>

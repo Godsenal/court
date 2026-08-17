@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { NodeState, RunDetailData } from "../types.ts";
 import { api, useRunDetail } from "../api.ts";
-import { KIND_ICON, ROLE_LABEL, StatusChip } from "./status.tsx";
+import { KindIcon, ROLE_LABEL, StatusChip } from "./status.tsx";
 import { CheckIcon, Chevron, Disclosure, HandIcon, Pill, SkipIcon, SpinnerRing, StatusBadge, XIcon } from "./bui.tsx";
 import { useToast } from "./Toast.tsx";
 import { DiffModal } from "./DiffModal.tsx";
@@ -20,11 +20,11 @@ export function RunView({ runId, onArchived }: { runId: string; onArchived: (id:
 
   const cancel = async () => {
     await api(`/runs/${runId}/cancel`, { method: "POST" });
-    toast("어명을 취소했습니다");
+    toast("작업을 취소했습니다");
   };
   const archive = async () => {
     await api(`/runs/${runId}`, { method: "DELETE" });
-    toast("기록 보관함으로 옮겼습니다");
+    toast("보관함으로 이동했습니다");
     onArchived(runId);
   };
 
@@ -44,8 +44,8 @@ export function RunView({ runId, onArchived }: { runId: string; onArchived: (id:
       </header>
 
       {waitingGates.length > 0 && (
-        <div className="border-b border-gold/25 bg-gold/8 px-6 py-2 text-[13px] text-gold" style={{ animation: "fade-in 300ms ease-out both" }}>
-          ✋ 어전 호출 — {waitingGates.length}건의 결재가 기다리고 있습니다
+        <div className="border-b border-amber/25 bg-amber/8 px-6 py-2 text-[13px] text-amber" style={{ animation: "fade-in 300ms ease-out both" }}>
+          {waitingGates.length}건의 승인이 필요합니다
         </div>
       )}
 
@@ -103,7 +103,7 @@ function pillFor(node: NodeState) {
     case "failed":
       return <Pill tone="ruby">실패</Pill>;
     case "waiting_human":
-      return <Pill tone="amber">결재 대기</Pill>;
+      return <Pill tone="amber">승인 대기</Pill>;
     case "skipped":
       return <Pill tone="dim">건너뜀</Pill>;
     default:
@@ -153,8 +153,8 @@ function NodeRow({ runId, node, index }: { runId: string; node: NodeState; index
         className="flex h-11 w-full items-center gap-2.5 px-2.5 text-left transition-colors duration-100 hover:bg-panel-2"
       >
         <span className="flex size-6 shrink-0 items-center justify-center">{badgeFor(node, index)}</span>
+        <KindIcon kind={node.spec.kind} />
         <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-          <span className="mr-1.5">{KIND_ICON[node.spec.kind] ?? "•"}</span>
           {node.spec.title ?? node.spec.id}
         </span>
         {role && <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[11px] text-dim">{role}</span>}
@@ -213,7 +213,7 @@ function NodeRow({ runId, node, index }: { runId: string; node: NodeState; index
   );
 }
 
-/** Live agent console: streaming text with auto-scroll and a gold caret. */
+/** Live agent console: streaming text with auto-scroll and a accent caret. */
 function LiveStream({ text }: { text: string }) {
   const ref = useRef<HTMLPreElement>(null);
   const stick = useRef(true);
@@ -247,7 +247,7 @@ function ApprovalCard({ runId, node }: { runId: string; node: NodeState }) {
         method: "POST",
         body: JSON.stringify({ approved, note: note || undefined }),
       });
-      toast(approved ? "윤허했습니다" : "불허했습니다");
+      toast(approved ? "승인했습니다" : "거절했습니다");
     } catch (e) {
       toast(String(e instanceof Error ? e.message : e), "err");
     } finally {
@@ -256,29 +256,29 @@ function ApprovalCard({ runId, node }: { runId: string; node: NodeState }) {
   };
 
   return (
-    <div className="mx-2.5 mb-2.5 rounded-xl border border-gold/30 bg-gold/8 px-3.5 py-3">
-      <p className="text-[13.5px] font-medium text-gold">✋ {node.spec.question ?? "결재가 필요합니다"}</p>
-      {node.spec.risk && <p className="mt-0.5 text-[11.5px] text-dim">위험도 {node.spec.risk} · cmux Feed에서도 결재할 수 있습니다</p>}
+    <div className="mx-2.5 mb-2.5 rounded-xl border border-amber/30 bg-amber/8 px-3.5 py-3">
+      <p className="text-[13.5px] font-medium text-amber">{node.spec.question ?? "승인이 필요합니다"}</p>
+      {node.spec.risk && <p className="mt-0.5 text-[11.5px] text-dim">위험도 {node.spec.risk} · cmux Feed에서도 승인할 수 있습니다</p>}
       <div className="mt-2.5 flex gap-2">
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="메모 (선택)"
-          className="min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-3 py-1.5 text-[13px] outline-none placeholder:text-faint focus:border-gold/50"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-3 py-1.5 text-[13px] outline-none placeholder:text-faint focus:border-accent/50"
         />
         <button
           disabled={busy}
           onClick={() => decide(true)}
           className="rounded-lg bg-jade/90 px-4 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-jade disabled:opacity-50"
         >
-          윤허
+          승인
         </button>
         <button
           disabled={busy}
           onClick={() => decide(false)}
           className="rounded-lg bg-ruby/80 px-4 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-ruby disabled:opacity-50"
         >
-          불허
+          거절
         </button>
       </div>
     </div>
@@ -322,12 +322,12 @@ function FollowUpComposer({ runId, run }: { runId: string; run: RunDetailData })
           }}
           rows={Math.min(4, Math.max(1, prompt.split("\n").length))}
           placeholder={resumable ? "에이전트에게 추가 지시… (같은 세션에 이어서 전달됩니다)" : "추가 지시… (새 작업 스텝으로 실행됩니다)"}
-          className="min-h-9 flex-1 resize-none rounded-xl border border-line bg-ink/60 px-3.5 py-2 text-[13.5px] leading-relaxed outline-none placeholder:text-faint focus:border-gold/50"
+          className="min-h-9 flex-1 resize-none rounded-xl border border-line bg-ink/60 px-3.5 py-2 text-[13.5px] leading-relaxed outline-none placeholder:text-faint focus:border-accent/50"
         />
         <button
           disabled={busy || !prompt.trim()}
           onClick={send}
-          className="rounded-xl bg-gold px-4 py-2 text-[13px] font-semibold text-ink transition hover:brightness-110 disabled:opacity-40"
+          className="rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-ink transition hover:brightness-110 disabled:opacity-40"
         >
           {busy ? "전달 중…" : "전달"}
         </button>
