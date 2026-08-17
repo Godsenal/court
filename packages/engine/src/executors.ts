@@ -21,6 +21,8 @@ export interface AgentRunRequest {
   cwd?: string;
   /** Called as soon as the underlying session is known (cmux workspace, pid...). */
   onSession?: (session: AgentSessionRef) => void;
+  /** Live activity stream (assistant text, tool calls) while the step runs. */
+  onProgress?: (chunk: string) => void;
 }
 
 /** Plain one-shot LLM completion (via Vercel AI Gateway). Used by judge/loop-until. */

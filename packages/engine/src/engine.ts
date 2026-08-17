@@ -108,6 +108,57 @@ export class Engine {
     this.emit({ type: "run.status", runId, status: "cancelled", at: this.now() });
   }
 
+  /** Append a node to a run at any time (follow-ups); reopens terminal runs. */
+  addNode(runId: string, spec: NodeSpec): void {
+    const run = this.runs.get(runId);
+    if (!run) throw new Error(`unknown run: ${runId}`);
+    if (run.nodes[spec.id]) throw new Error(`node ${spec.id} already exists`);
+    for (const dep of spec.dependsOn) {
+      if (!run.nodes[dep]) throw new Error(`unknown dependency: ${dep}`);
+    }
+    this.emit({ type: "node.added", runId, spec, at: this.now() });
+    if (run.status !== "running" && run.status !== "waiting_human") {
+      this.emit({ type: "run.status", runId, status: "running", at: this.now() });
+    }
+    this.tick(runId);
+  }
+
+  /** Re-run a failed/skipped node (and revive nodes it had skipped downstream). */
+  retryNode(runId: string, nodeId: string): void {
+    const run = this.runs.get(runId);
+    const node = run?.nodes[nodeId];
+    if (!run || !node) throw new Error(`unknown node ${runId}/${nodeId}`);
+    if (node.status !== "failed" && node.status !== "skipped") {
+      throw new Error(`node ${nodeId} is ${node.status}; only failed/skipped nodes can retry`);
+    }
+    const revive = new Set<string>([nodeId]);
+    // Downstream nodes that were skipped because of this failure become pending again.
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const n of Object.values(run.nodes)) {
+        if (n.status !== "skipped" || revive.has(n.spec.id)) continue;
+        if (n.spec.dependsOn.some((d) => revive.has(d))) {
+          revive.add(n.spec.id);
+          grew = true;
+        }
+      }
+    }
+    for (const id of revive) {
+      this.emit({ type: "node.status", runId, nodeId: id, status: "pending", at: this.now() });
+    }
+    if (run.status !== "running" && run.status !== "waiting_human") {
+      this.emit({ type: "run.status", runId, status: "running", at: this.now() });
+    }
+    this.tick(runId);
+  }
+
+  /** Drop a run from memory (archive); caller persists/moves the JSONL. */
+  remove(runId: string): void {
+    this.runs.delete(runId);
+    this.inflight.delete(runId);
+  }
+
   private emit(event: RunEvent): void {
     const runId = event.runId;
     const state = reduce(this.runs.get(runId), event);
@@ -243,6 +294,7 @@ export class Engine {
         prompt,
         cwd: spec.cwd,
         onSession: (session) => this.emit({ type: "node.session", runId, nodeId: spec.id, session, at: this.now() }),
+        onProgress: (chunk) => this.emit({ type: "node.progress", runId, nodeId: spec.id, chunk, at: this.now() }),
       }),
     );
     this.emit({ type: "node.output", runId, nodeId: spec.id, output, at: this.now() });

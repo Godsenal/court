@@ -48,11 +48,14 @@ export class ClaudeAgentExecutor implements AgentExecutor {
       "-p",
       req.prompt,
       "--output-format",
-      "json",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages",
       "--model",
       model,
       "--append-system-prompt",
       req.role.systemPrompt,
+      ...(req.node.resumeSessionId ? ["--resume", req.node.resumeSessionId] : []),
       ...roleToolArgs(req),
       ...(this.opts.extraArgs ?? []),
     ];
@@ -66,17 +69,79 @@ export class ClaudeAgentExecutor implements AgentExecutor {
 
     const timeoutMs = this.opts.timeoutMs ?? 30 * 60 * 1000;
     const timer = setTimeout(() => proc.kill(), timeoutMs);
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ]);
+
+    // Batch live deltas so each step doesn't flood the event log.
+    let pending = "";
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flush = () => {
+      if (pending) {
+        req.onProgress?.(pending);
+        pending = "";
+      }
+      flushTimer = null;
+    };
+    const push = (chunk: string) => {
+      if (!req.onProgress) return;
+      pending += chunk;
+      flushTimer ??= setTimeout(flush, 250);
+    };
+
+    let result: string | null = null;
+    let isError = false;
+    const handleLine = (line: string) => {
+      let event: any;
+      try {
+        event = JSON.parse(line);
+      } catch {
+        return;
+      }
+      switch (event.type) {
+        case "system":
+          if (event.subtype === "init" && event.session_id) {
+            req.onSession?.({ runner: "claude", sessionId: event.session_id, pid: proc.pid });
+          }
+          break;
+        case "stream_event": {
+          const inner = event.event;
+          if (inner?.type === "content_block_delta" && inner.delta?.type === "text_delta") {
+            push(inner.delta.text ?? "");
+          } else if (inner?.type === "content_block_start" && inner.content_block?.type === "tool_use") {
+            push(`\n\n⏺ ${inner.content_block.name}\n`);
+          }
+          break;
+        }
+        case "result":
+          isError = Boolean(event.is_error);
+          result = typeof event.result === "string" ? event.result : JSON.stringify(event.result ?? "");
+          if (event.session_id) req.onSession?.({ runner: "claude", sessionId: event.session_id });
+          break;
+      }
+    };
+
+    const stderrPromise = new Response(proc.stderr).text();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for await (const chunk of proc.stdout) {
+      buffer += decoder.decode(chunk, { stream: true });
+      let nl: number;
+      while ((nl = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(nl + 1);
+        if (line) handleLine(line);
+      }
+    }
+    if (buffer.trim()) handleLine(buffer.trim());
+    const [stderr, exitCode] = await Promise.all([stderrPromise, proc.exited]);
     clearTimeout(timer);
+    if (flushTimer) clearTimeout(flushTimer);
+    flush();
 
     if (exitCode !== 0) {
-      throw new Error(`claude exited ${exitCode}: ${stderr.slice(0, 2000) || stdout.slice(0, 2000)}`);
+      throw new Error(`claude exited ${exitCode}: ${stderr.slice(0, 2000)}`);
     }
-    return parseClaudeJson(stdout, req.onSession);
+    if (isError) throw new Error(`claude reported error: ${String(result).slice(0, 500)}`);
+    if (result === null) throw new Error(`claude produced no result event: ${stderr.slice(0, 500)}`);
+    return result;
   }
 
   /**

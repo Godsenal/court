@@ -34,7 +34,22 @@ export function reduce(state: RunState | undefined, event: RunEvent): RunState {
       if (event.status === "completed" || event.status === "failed" || event.status === "skipped") {
         patch.endedAt = event.at;
       }
+      if (event.status === "pending") {
+        // Retry: wipe the previous attempt's traces.
+        patch.output = undefined;
+        patch.error = undefined;
+        patch.progress = undefined;
+        patch.startedAt = undefined;
+        patch.endedAt = undefined;
+      }
       return withNode(s, event.nodeId, patch, event.at);
+    }
+    case "node.progress": {
+      const s = must(state);
+      const prev = s.nodes[event.nodeId]?.progress ?? "";
+      // Keep a bounded live tail in memory; the full stream stays in the JSONL.
+      const progress = (prev + event.chunk).slice(-65536);
+      return withNode(s, event.nodeId, { progress }, event.at);
     }
     case "node.session": {
       const s = must(state);

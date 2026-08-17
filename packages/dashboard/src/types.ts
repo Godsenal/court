@@ -19,10 +19,13 @@ export interface NodeState {
     tier?: string;
     risk?: string;
     question?: string;
+    prompt?: string;
+    resumeSessionId?: string;
     dependsOn: string[];
   };
   status: string;
   output?: string;
+  progress?: string;
   error?: string;
   startedAt?: string;
   endedAt?: string;
@@ -39,5 +42,25 @@ export interface RunDetailData {
 export interface Role {
   id: string;
   name: string;
-  policy: { runner: string; models: Record<string, string>; autoApproveBelow: string };
+  systemPrompt: string;
+  policy: {
+    runner: string;
+    models: Record<string, string>;
+    autoApproveBelow: string;
+    allowedTools?: string[];
+    disallowedTools?: string[];
+  };
+}
+
+export interface Schedule {
+  name: string;
+  intervalHours: number;
+  enabled?: boolean;
+  mission: { goal: string; template?: string; cwd?: string };
+}
+
+export interface RunEventMsg {
+  type: "run.event";
+  event: { type: string; runId: string; nodeId?: string; chunk?: string };
+  run: RunSummary;
 }

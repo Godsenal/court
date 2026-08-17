@@ -63,6 +63,8 @@ export interface AgentNodeSpec extends BaseNodeSpec {
   /** Override the role's runner/model if needed. */
   runner?: RolePolicy["runner"];
   model?: ModelId;
+  /** Resume a previous CLI session (follow-up messages keep full context). */
+  resumeSessionId?: string;
 }
 
 /** Human approval gate. Auto-resolves when risk < approver policy. */
@@ -150,6 +152,8 @@ export interface NodeState {
   spec: NodeSpec;
   status: NodeStatus;
   output?: string;
+  /** Live activity stream while running (assistant text, tool calls). */
+  progress?: string;
   error?: string;
   startedAt?: string;
   endedAt?: string;
@@ -186,6 +190,7 @@ export type RunEvent =
   | { type: "node.status"; runId: string; nodeId: string; status: NodeStatus; at: string }
   | { type: "node.session"; runId: string; nodeId: string; session: AgentSessionRef; at: string }
   | { type: "node.output"; runId: string; nodeId: string; output: string; at: string }
+  | { type: "node.progress"; runId: string; nodeId: string; chunk: string; at: string }
   | { type: "node.failed"; runId: string; nodeId: string; error: string; at: string }
   | { type: "gate.requested"; runId: string; nodeId: string; question: string; risk: RiskLevel; context: string; at: string }
   | { type: "gate.resolved"; runId: string; nodeId: string; approved: boolean; by: "human" | "policy"; note?: string; at: string }

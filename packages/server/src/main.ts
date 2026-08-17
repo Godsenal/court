@@ -160,6 +160,32 @@ function summarize(run: RunState) {
   };
 }
 
+// Model catalog: gateway list when a key is present, claude aliases otherwise.
+let modelsCache: { at: number; models: string[] } | null = null;
+async function listModels(): Promise<{ models: string[]; source: string }> {
+  const fallback = ["anthropic/claude-opus-5", "anthropic/claude-sonnet-5", "anthropic/claude-haiku-4.5"];
+  const key = process.env.AI_GATEWAY_API_KEY;
+  if (!key) return { models: fallback, source: "claude-cli" };
+  if (modelsCache && Date.now() - modelsCache.at < 5 * 60_000) {
+    return { models: modelsCache.models, source: "gateway" };
+  }
+  try {
+    const res = await fetch("https://ai-gateway.vercel.sh/v1/models", {
+      headers: { authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = (await res.json()) as { data?: Array<{ id: string }> };
+    const models = (data.data ?? []).map((m) => m.id).sort();
+    if (models.length) {
+      modelsCache = { at: Date.now(), models };
+      return { models, source: "gateway" };
+    }
+  } catch (e) {
+    console.error(`[models] gateway list failed: ${e}`);
+  }
+  return { models: fallback, source: "claude-cli" };
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data, null, 2), {
     status,
@@ -231,6 +257,116 @@ const server = Bun.serve({
       const mission = buildMission(input);
       const run = engine.start(mission);
       return json(summarize(run), 201);
+    }
+
+    // Follow-up: continue the conversation with a run's agent (resumes the CLI session).
+    const followMatch = path.match(/^\/api\/runs\/([^/]+)\/follow-up$/);
+    if (followMatch && req.method === "POST") {
+      const runId = followMatch[1]!;
+      const run = engine.getRun(runId);
+      if (!run) return json({ error: "not found" }, 404);
+      const body = (await req.json()) as { prompt: string; nodeId?: string };
+      if (!body.prompt?.trim()) return json({ error: "prompt required" }, 400);
+      const nodes = Object.values(run.nodes);
+      const target = body.nodeId
+        ? run.nodes[body.nodeId]
+        : [...nodes].reverse().find((n) => n.spec.kind === "agent" && n.session?.sessionId);
+      const seq = nodes.filter((n) => n.spec.id.startsWith("follow-")).length + 1;
+      const resume = target?.session?.sessionId;
+      try {
+        engine.addNode(runId, {
+          kind: "agent",
+          id: `follow-${seq}`,
+          dependsOn: [],
+          title: `💬 팔로우업 ${seq}`,
+          role: target?.spec.kind === "agent" ? target.spec.role : "developer",
+          tier: "executor",
+          cwd: target?.spec.kind === "agent" ? target.spec.cwd : undefined,
+          runner: target?.spec.kind === "agent" ? target.spec.runner : undefined,
+          resumeSessionId: resume,
+          prompt: resume ? body.prompt : `Mission context:\n${run.mission.goal}\n\n${body.prompt}`,
+        });
+        return json({ ok: true, nodeId: `follow-${seq}`, resumed: Boolean(resume) });
+      } catch (e) {
+        return json({ error: String(e) }, 409);
+      }
+    }
+
+    // Retry a failed/skipped node.
+    const retryMatch = path.match(/^\/api\/runs\/([^/]+)\/nodes\/([^/]+)\/retry$/);
+    if (retryMatch && req.method === "POST") {
+      try {
+        engine.retryNode(retryMatch[1]!, decodeURIComponent(retryMatch[2]!));
+        return json({ ok: true });
+      } catch (e) {
+        return json({ error: String(e) }, 409);
+      }
+    }
+
+    // Archive (remove from the live list; JSONL moves to runs/archive/).
+    const archiveMatch = path.match(/^\/api\/runs\/([^/]+)$/);
+    if (archiveMatch && req.method === "DELETE") {
+      const runId = archiveMatch[1]!;
+      engine.remove(runId);
+      try {
+        const { renameSync, mkdirSync: mkdir } = await import("node:fs");
+        mkdir(`${store.dir}/archive`, { recursive: true });
+        renameSync(`${store.dir}/${runId}.jsonl`, `${store.dir}/archive/${runId}.jsonl`);
+      } catch {
+        // already archived or never persisted
+      }
+      return json({ ok: true });
+    }
+
+    // Working-tree diff for the run's workdirs.
+    const diffMatch = path.match(/^\/api\/runs\/([^/]+)\/diff$/);
+    if (diffMatch && req.method === "GET") {
+      const run = engine.getRun(diffMatch[1]!);
+      if (!run) return json({ error: "not found" }, 404);
+      const cwds = [...new Set(Object.values(run.nodes).map((n) => ("cwd" in n.spec ? n.spec.cwd : undefined)).filter(Boolean))] as string[];
+      const diffs = [];
+      for (const cwd of cwds) {
+        const proc = Bun.spawn(["git", "-C", cwd, "diff", "HEAD"], { stdout: "pipe", stderr: "pipe" });
+        const [out, code] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
+        const statusProc = Bun.spawn(["git", "-C", cwd, "status", "--short"], { stdout: "pipe", stderr: "pipe" });
+        const [status] = await Promise.all([new Response(statusProc.stdout).text(), statusProc.exited]);
+        if (code === 0) diffs.push({ cwd, status: status.trim(), diff: out.slice(0, 200_000) });
+      }
+      return json({ diffs });
+    }
+
+    if (path === "/api/models" && req.method === "GET") {
+      return json(await listModels());
+    }
+
+    const rolePutMatch = path.match(/^\/api\/roles\/([^/]+)$/);
+    if (rolePutMatch && req.method === "PUT") {
+      const role = (await req.json()) as import("@court/engine").Role;
+      if (!role?.id || role.id !== rolePutMatch[1]) return json({ error: "role id mismatch" }, 400);
+      if (!role.systemPrompt || !role.policy?.runner) return json({ error: "systemPrompt and policy.runner required" }, 400);
+      const dir = `${process.env.HOME}/.court/roles`;
+      const { mkdirSync: mkdir, writeFileSync } = await import("node:fs");
+      mkdir(dir, { recursive: true });
+      writeFileSync(`${dir}/${role.id}.json`, JSON.stringify(role, null, 2));
+      roles.set(role.id, role);
+      return json({ ok: true });
+    }
+
+    if (path === "/api/schedules") {
+      const file = `${process.env.HOME}/.court/schedules.json`;
+      const stateFile = `${process.env.HOME}/.court/schedules-state.json`;
+      const { readFileSync: read, writeFileSync, existsSync } = await import("node:fs");
+      if (req.method === "GET") {
+        const schedules = existsSync(file) ? JSON.parse(read(file, "utf8")) : [];
+        const state = existsSync(stateFile) ? JSON.parse(read(stateFile, "utf8")) : { lastRun: {} };
+        return json({ schedules, lastRun: state.lastRun ?? {} });
+      }
+      if (req.method === "PUT") {
+        const body = await req.json();
+        if (!Array.isArray(body)) return json({ error: "expected an array of schedules" }, 400);
+        writeFileSync(file, JSON.stringify(body, null, 2));
+        return json({ ok: true });
+      }
     }
 
     const gateMatch = path.match(/^\/api\/runs\/([^/]+)\/gates\/([^/]+)$/);

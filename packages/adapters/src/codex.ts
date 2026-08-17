@@ -54,11 +54,23 @@ export class CodexAgentExecutor implements AgentExecutor {
 
     const timeoutMs = this.opts.timeoutMs ?? 30 * 60 * 1000;
     const timer = setTimeout(() => proc.kill(), timeoutMs);
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ]);
+    // Stream codex's progress lines live.
+    const decoder = new TextDecoder();
+    let stdout = "";
+    let buffer = "";
+    const stderrPromise = new Response(proc.stderr).text();
+    for await (const chunk of proc.stdout) {
+      const text = decoder.decode(chunk, { stream: true });
+      stdout += text;
+      buffer += text;
+      let nl: number;
+      while ((nl = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, nl);
+        buffer = buffer.slice(nl + 1);
+        if (line.trim() && !line.startsWith("hook:")) req.onProgress?.(line + "\n");
+      }
+    }
+    const [stderr, exitCode] = await Promise.all([stderrPromise, proc.exited]);
     clearTimeout(timer);
 
     if (exitCode !== 0) {
