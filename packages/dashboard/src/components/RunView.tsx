@@ -123,7 +123,7 @@ function NodeRow({ runId, node, index }: { runId: string; node: NodeState; index
   const [manualOpen, setManualOpen] = useState<boolean | null>(null);
   const isGateWaiting = node.spec.kind === "gate" && node.status === "waiting_human";
   const running = node.status === "running";
-  const hasBody = Boolean(node.output || node.error || node.progress || isGateWaiting);
+  const hasBody = Boolean(node.output || node.error || node.progress || isGateWaiting || node.spec.prompt);
   const open = manualOpen ?? (isGateWaiting || running);
   const role = node.spec.role ? (ROLE_LABEL[node.spec.role] ?? node.spec.role) : null;
   const duration = durationOf(node);
@@ -181,10 +181,20 @@ function NodeRow({ runId, node, index }: { runId: string; node: NodeState; index
 
       <Disclosure open={open}>
         {isGateWaiting && <ApprovalCard runId={runId} node={node} />}
-        {(node.progress || node.output || node.error) && (
+        {(node.progress || node.output || node.error || node.spec.prompt) && (
           <div className="mb-2.5 grid grid-cols-[24px_1fr] gap-2.5 px-2.5">
             <span aria-hidden className="mx-auto h-full w-px bg-line" />
             <div className="min-w-0">
+              {node.spec.prompt && (
+                <details className="mb-2">
+                  <summary className="cursor-pointer select-none text-[11.5px] text-faint transition hover:text-dim">
+                    지시 내용 보기
+                  </summary>
+                  <pre className="mt-1.5 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-ink/40 p-3 font-mono text-[11.5px] leading-relaxed text-dim">
+                    {node.spec.prompt}
+                  </pre>
+                </details>
+              )}
               {running && node.progress && <LiveStream text={node.progress} />}
               {!running && node.progress && !node.output && !node.error && (
                 <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-dim">{node.progress}</pre>
