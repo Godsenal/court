@@ -13,6 +13,7 @@ import { RunStore } from "./store.ts";
 import { loadRoles } from "./roles.ts";
 import { buildMission, type MissionInput } from "./templates.ts";
 import { planGraph } from "./planner.ts";
+import { startScheduler } from "./scheduler.ts";
 
 const PORT = Number(process.env.COURT_PORT ?? 8433);
 
@@ -127,6 +128,11 @@ for (const runId of store.listRunIds()) {
   }
 }
 engine.recover();
+
+// 반복 어명 — recurring missions from ~/.court/schedules.json.
+startScheduler((mission) => {
+  engine.start(buildMission(mission));
+});
 
 function summarize(run: RunState) {
   const nodes = Object.values(run.nodes);

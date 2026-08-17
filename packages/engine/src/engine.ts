@@ -292,6 +292,31 @@ export class Engine {
     const model = role.policy.models[spec.tier] ?? DEFAULT_MODEL;
     const subject = this.vars(runId)[spec.subject] ?? "";
     this.emit({ type: "node.status", runId, nodeId: spec.id, status: "running", at: this.now() });
+
+    // Deterministic floor: failing shell checks pin the verdict to fail.
+    const checkResults: Array<{ run: string; ok: boolean; output: string }> = [];
+    for (const check of spec.checks ?? []) {
+      try {
+        const output = await this.deps.tool.run(
+          { kind: "tool", id: `${spec.id}.check`, dependsOn: [], tool: "shell", input: check.run, cwd: check.cwd },
+          check.run,
+        );
+        checkResults.push({ run: check.run, ok: true, output: output.slice(0, 500) });
+      } catch (error) {
+        checkResults.push({ run: check.run, ok: false, output: String(error).slice(0, 500) });
+      }
+    }
+    if (checkResults.some((c) => !c.ok)) {
+      this.emit({
+        type: "node.output",
+        runId,
+        nodeId: spec.id,
+        output: JSON.stringify({ pass: false, pinnedBy: "checks", checks: checkResults }, null, 2),
+        at: this.now(),
+      });
+      this.emit({ type: "node.status", runId, nodeId: spec.id, status: "failed", at: this.now() });
+      return;
+    }
     const system =
       "You are a strict verifier on a judge panel. Judge the WORK against the CRITERIA. " +
       "First line must be exactly PASS or FAIL, then a short reason.";
@@ -306,7 +331,7 @@ export class Engine {
       type: "node.output",
       runId,
       nodeId: spec.id,
-      output: JSON.stringify({ pass, passVotes, total: spec.votes, votes }, null, 2),
+      output: JSON.stringify({ pass, passVotes, total: spec.votes, votes, checks: checkResults }, null, 2),
       at: this.now(),
     });
     this.emit({ type: "node.status", runId, nodeId: spec.id, status: pass ? "completed" : "failed", at: this.now() });

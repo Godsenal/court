@@ -16,6 +16,13 @@ export interface RolePolicy {
   runner: string;
   /** Auto-approve policy: gates below this risk level resolve themselves. */
   autoApproveBelow: RiskLevel;
+  /**
+   * Structural capability control (loops lesson: prompts can't beat loaded
+   * tools — deny at the CLI layer). Passed to CLI runners as
+   * --allowedTools / --disallowedTools.
+   */
+  allowedTools?: string[];
+  disallowedTools?: string[];
 }
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
@@ -75,6 +82,12 @@ export interface JudgeNodeSpec extends BaseNodeSpec {
   votes: number; // odd number
   tier: ModelTier;
   role: string;
+  /**
+   * Deterministic floor (loops lesson): shell commands run BEFORE the LLM
+   * panel. Any failing check pins the verdict to fail — the panel can only
+   * worsen a passing floor, never rescue a failing one.
+   */
+  checks?: Array<{ run: string; cwd?: string }>;
 }
 
 /** Expand into one child per item at runtime. */

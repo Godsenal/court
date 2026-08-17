@@ -53,6 +53,7 @@ export class ClaudeAgentExecutor implements AgentExecutor {
       model,
       "--append-system-prompt",
       req.role.systemPrompt,
+      ...roleToolArgs(req),
       ...(this.opts.extraArgs ?? []),
     ];
     const proc = Bun.spawn([bin, ...args], {
@@ -94,7 +95,9 @@ export class ClaudeAgentExecutor implements AgentExecutor {
     writeFileSync(promptFile, req.prompt);
     writeFileSync(systemFile, req.role.systemPrompt);
     const bin = this.opts.bin ?? resolveClaudeBin();
-    const extra = (this.opts.extraArgs ?? []).map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ");
+    const extra = [...roleToolArgs(req), ...(this.opts.extraArgs ?? [])]
+      .map((a) => `'${a.replace(/'/g, "'\\''")}'`)
+      .join(" ");
     writeFileSync(
       runnerFile,
       `#!/bin/zsh
@@ -122,6 +125,18 @@ echo "\\n✓ court step finished — this terminal can be closed."
     if (exitCode !== 0) throw new Error(`claude (visible) exited ${exitCode}: ${stdout.slice(0, 2000)}`);
     return parseClaudeJson(stdout, req.onSession);
   }
+}
+
+/**
+ * Structural capability control: a role's tool policy becomes CLI flags, so a
+ * reviewer physically cannot edit files no matter what the prompt says.
+ */
+function roleToolArgs(req: AgentRunRequest): string[] {
+  const args: string[] = [];
+  const { allowedTools, disallowedTools } = req.role.policy;
+  if (allowedTools?.length) args.push("--allowedTools", allowedTools.join(","));
+  if (disallowedTools?.length) args.push("--disallowedTools", disallowedTools.join(","));
+  return args;
 }
 
 /**

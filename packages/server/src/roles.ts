@@ -40,7 +40,13 @@ export const BUILTIN_ROLES: Role[] = [
     systemPrompt:
       "You are a rigorous code/work reviewer. Hunt for real defects, not style nits. " +
       "Verdicts must cite concrete failure scenarios.",
-    policy: { models: { planner: PLANNER, executor: EXECUTOR, cheap: CHEAP }, runner: "llm", autoApproveBelow: "medium" },
+    // Structural control: even when run via a CLI runner, a reviewer cannot mutate.
+    policy: {
+      models: { planner: PLANNER, executor: EXECUTOR, cheap: CHEAP },
+      runner: "llm",
+      autoApproveBelow: "medium",
+      disallowedTools: ["Edit", "Write", "NotebookEdit", "Bash"],
+    },
   },
   {
     id: "researcher",
@@ -48,7 +54,12 @@ export const BUILTIN_ROLES: Role[] = [
     systemPrompt:
       "You are a thorough researcher. Verify claims against sources, distinguish confirmed facts from speculation, " +
       "and return structured findings.",
-    policy: { models: { planner: PLANNER, executor: EXECUTOR, cheap: CHEAP }, runner: "llm", autoApproveBelow: "low" },
+    policy: {
+      models: { planner: PLANNER, executor: EXECUTOR, cheap: CHEAP },
+      runner: "llm",
+      autoApproveBelow: "low",
+      disallowedTools: ["Edit", "Write", "NotebookEdit"],
+    },
   },
 ];
 
