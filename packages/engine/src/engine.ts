@@ -241,7 +241,7 @@ export class Engine {
 
   private strictestAutoApprove(runId: string): GateNodeSpec["risk"] {
     const run = this.runs.get(runId)!;
-    let lowest: GateNodeSpec["risk"] = "critical";
+    let lowest: GateNodeSpec["risk"] = run.mission.autoApproveBelow ?? "medium";
     for (const node of Object.values(run.nodes)) {
       if (node.spec.kind !== "agent") continue;
       const role = this.deps.roles.get(node.spec.role);

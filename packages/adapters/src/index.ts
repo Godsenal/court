@@ -4,3 +4,4 @@ export { CmuxClient, type CmuxEvent } from "./cmux.ts";
 export { DefaultToolExecutor, type ToolDeps } from "./tools.ts";
 export { RoutingAgentExecutor } from "./router.ts";
 export { createGatewayLlm, type GatewayOptions } from "./gateway.ts";
+export { createClaudeLlm } from "./claude-llm.ts";

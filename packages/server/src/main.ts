@@ -7,6 +7,7 @@ import {
   RoutingAgentExecutor,
   createGatewayLlm,
 } from "@court/adapters";
+import { createClaudeLlm } from "@court/adapters";
 import { RunStore } from "./store.ts";
 import { loadRoles } from "./roles.ts";
 import { buildMission, type MissionInput } from "./templates.ts";
@@ -16,7 +17,9 @@ const PORT = Number(process.env.COURT_PORT ?? 8433);
 const store = new RunStore();
 const roles = loadRoles();
 const cmux = new CmuxClient();
-const llm = createGatewayLlm();
+// Gateway when configured (any provider/model), otherwise the local claude CLI.
+const llm = process.env.AI_GATEWAY_API_KEY ? createGatewayLlm() : createClaudeLlm();
+console.log(`[llm] ${process.env.AI_GATEWAY_API_KEY ? "vercel-ai-gateway" : "claude-cli fallback"}`);
 
 const sockets = new Set<Bun.ServerWebSocket<unknown>>();
 function broadcast(event: RunEvent, state: RunState): void {

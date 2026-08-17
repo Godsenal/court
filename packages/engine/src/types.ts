@@ -111,6 +111,12 @@ export interface Mission {
   goal: string;
   graph: GraphSpec;
   createdAt: string;
+  /**
+   * Mission-wide gate auto-approval ceiling (exclusive). Defaults to "medium":
+   * low-risk gates self-approve, medium+ wait for a human. Roles in play can
+   * only lower this, never raise it.
+   */
+  autoApproveBelow?: RiskLevel;
 }
 
 /** ---------- Runtime state ---------- */
