@@ -1,4 +1,8 @@
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { homedir, tmpdir } from "node:os";
 import type { AgentExecutor, AgentRunRequest } from "@court/engine";
+import type { CmuxClient } from "./cmux.ts";
 
 export interface ClaudeAdapterOptions {
   /** Path to the claude binary; defaults to `claude` on PATH. */
@@ -7,6 +11,12 @@ export interface ClaudeAdapterOptions {
   extraArgs?: string[];
   /** Per-call timeout in ms. */
   timeoutMs?: number;
+  /**
+   * When set, runs the step inside a visible cmux workspace terminal instead of
+   * a hidden child process, so the human can watch the agent work live.
+   */
+  cmux?: CmuxClient;
+  visible?: boolean;
 }
 
 /**
@@ -19,6 +29,14 @@ export class ClaudeAgentExecutor implements AgentExecutor {
   constructor(private opts: ClaudeAdapterOptions = {}) {}
 
   async run(req: AgentRunRequest): Promise<string> {
+    if (this.opts.visible && this.opts.cmux) {
+      // Fall back to headless when the cmux app isn't reachable.
+      if (await this.opts.cmux.available()) return this.runVisible(req, this.opts.cmux);
+    }
+    return this.runHeadless(req);
+  }
+
+  private async runHeadless(req: AgentRunRequest): Promise<string> {
     const bin = this.opts.bin ?? "claude";
     const model = stripProvider(req.model);
     const args = [
@@ -52,6 +70,51 @@ export class ClaudeAgentExecutor implements AgentExecutor {
     if (exitCode !== 0) {
       throw new Error(`claude exited ${exitCode}: ${stderr.slice(0, 2000) || stdout.slice(0, 2000)}`);
     }
+    return parseClaudeJson(stdout, req.onSession);
+  }
+
+  /**
+   * Run `claude -p` inside a new cmux workspace so the human can watch live.
+   * Output is captured to a file; completion is signaled by a done-marker.
+   */
+  private async runVisible(req: AgentRunRequest, cmux: CmuxClient): Promise<string> {
+    const workDir = join(homedir(), ".court", "steps");
+    mkdirSync(workDir, { recursive: true });
+    const stamp = `${req.runId}-${req.node.id.replace(/[^\w-]/g, "_")}-${Date.now().toString(36)}`;
+    const promptFile = join(workDir, `${stamp}.prompt`);
+    const systemFile = join(workDir, `${stamp}.system`);
+    const outFile = join(workDir, `${stamp}.out`);
+    const doneFile = join(workDir, `${stamp}.done`);
+    const runnerFile = join(workDir, `${stamp}.sh`);
+    writeFileSync(promptFile, req.prompt);
+    writeFileSync(systemFile, req.role.systemPrompt);
+    const bin = this.opts.bin ?? "claude";
+    const extra = (this.opts.extraArgs ?? []).map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ");
+    writeFileSync(
+      runnerFile,
+      `#!/bin/zsh
+echo "👑 court step: ${req.node.id} (${req.role.id} / ${req.model})"
+${bin} -p "$(cat '${promptFile}')" --output-format json --model '${stripProvider(req.model)}' --append-system-prompt "$(cat '${systemFile}')" ${extra} | tee '${outFile}'
+echo $? > '${doneFile}'
+echo "\\n✓ court step finished — this terminal can be closed."
+`,
+    );
+    const ws = await cmux.newWorkspace({
+      cwd: req.cwd ?? tmpdir(),
+      command: `zsh '${runnerFile}'`,
+      name: `court:${req.node.id}`,
+    });
+    req.onSession?.({ runner: "claude", cmuxWorkspaceId: ws.slice(0, 120) });
+
+    const timeoutMs = this.opts.timeoutMs ?? 30 * 60 * 1000;
+    const start = Date.now();
+    while (!existsSync(doneFile)) {
+      if (Date.now() - start > timeoutMs) throw new Error(`visible step timed out: ${req.node.id}`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    const exitCode = Number(readFileSync(doneFile, "utf8").trim() || "1");
+    const stdout = existsSync(outFile) ? readFileSync(outFile, "utf8") : "";
+    if (exitCode !== 0) throw new Error(`claude (visible) exited ${exitCode}: ${stdout.slice(0, 2000)}`);
     return parseClaudeJson(stdout, req.onSession);
   }
 }

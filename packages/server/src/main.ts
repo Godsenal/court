@@ -29,7 +29,11 @@ function broadcast(event: RunEvent, state: RunState): void {
 
 const engine = new Engine({
   agent: new RoutingAgentExecutor(
-    { claude: new ClaudeAgentExecutor(), codex: new CodexAgentExecutor() },
+    {
+      // COURT_VISIBLE=1 runs claude steps in visible cmux workspaces.
+      claude: new ClaudeAgentExecutor({ cmux, visible: process.env.COURT_VISIBLE === "1" }),
+      codex: new CodexAgentExecutor(),
+    },
     llm,
   ),
   tool: new DefaultToolExecutor({
