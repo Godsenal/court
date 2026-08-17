@@ -55,6 +55,22 @@
 | **반복 어명(스케줄)** — 주기적 미션 자동 발행 (예: cmux upstream 동기화) | `scheduler.ts` + ~/.court/schedules.json |
 | **재시작 복구** — in-flight는 정직하게 실패 처리, 게이트는 유지 | `Engine.recover()` |
 
+## 참고: DeepSeek Harness (dsh)에서 배운 것
+
+deepseek-ai/deepseek-harness ("Everything is a Plugin", Cordis 기반) 조사 결과 court와의 대응:
+
+- **"Model-visible means logged"** 불변식 — 모델이 보는 모든 입력은 세션 로그에서 재구성
+  가능해야 한다. court도 동일: 노드 프롬프트는 이벤트 로그의 출력들에서 interpolate되므로
+  JSONL 리플레이로 모든 스텝의 입력이 재구성된다. 이 불변식을 깨는 기능(로그 밖 컨텍스트
+  주입)을 추가하지 말 것.
+- **Capability seam** — 정의/제공자/소비자 3역할로 능력을 스왑 가능하게. court의
+  Engine 주입(agent/tool/llm/gatekeeper)과 runner 레지스트리가 이 패턴. 프로바이더 하나를
+  바꾸면 세계 전체가 이동한다(예: 러너를 원격 샌드박스로 바꾸면 모든 스텝이 따라감).
+- **Waterfall 인터셉트 이벤트** (pre-step에서 메시지 재작성/거부, tools/pre-execute 가드)
+  — court 다음 버전 후보: 노드 dispatch 전 훅으로 프롬프트 검열/컨텍스트 주입.
+- **프로파일/번들 레이어링** — 정렬된 설정 레이어 + 패치로 부팅 트리 조합. court는
+  builtin roles ← ~/.court/roles ← mission 오버라이드의 단순 3층으로 동일 효과.
+
 ## 아직 안 한 것 (다음 후보)
 
 - SQLite 영속화 (JSONL로 충분해질 때까지 보류 — loops의 "Linear가 DB" 교훈은 반영)
