@@ -55,3 +55,7 @@ palace(관제 데스크탑) · loops(자율 루프) · cmux-remote(모바일) �
 - [x] S7: claude + codex 멀티 에이전트가 같은 그래프에서 협업한다
       (2026-08-17: claude(장인) add.py 작성/실행 → codex(감찰) PASS 리뷰)
 - [x] S8: AI가 그래프를 직접 설계한다 (template=auto, 재상 planner 모델의 graph engineering)
+      (2026-08-17: research→draft→judge→final 그래프 설계·완주)
+- [x] S9: 메타 도그푸드 — court가 court 자신에 실제 기능을 구현한다
+      (2026-08-17: /api/stats — 재상 계획 → cmux Feed 원클릭 승인 → 장인 구현 →
+      결정적 체크(bun test+tsc) + 감찰 패널 검수 → 머지. run-msx3x0k1-vc2q)
