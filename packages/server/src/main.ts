@@ -32,7 +32,44 @@ const engine = new Engine({
     { claude: new ClaudeAgentExecutor(), codex: new CodexAgentExecutor() },
     llm,
   ),
-  tool: new DefaultToolExecutor({}),
+  tool: new DefaultToolExecutor({
+    // Browser tasks run as a headless Claude agent driving ego-browser
+    // (isolated task spaces that reuse the user's login state).
+    browser: async (task) =>
+      new ClaudeAgentExecutor({ extraArgs: ["--allowedTools", "Bash", "Skill"] }).run({
+        runId: "browser",
+        node: { kind: "agent", id: "browser", dependsOn: [], role: "browser", tier: "executor", prompt: task },
+        role: {
+          id: "browser",
+          name: "browser",
+          systemPrompt:
+            "You are a browser automation agent. Use the ego-browser skill (`ego-browser nodejs <<'EOF' ... EOF` heredocs via Bash) " +
+            "to complete the web task. Create a task space, do the work, verify, then completeTaskSpace with keep:false. " +
+            "Return a concise result summary as your final answer.",
+          policy: { models: {}, runner: "claude", autoApproveBelow: "medium" },
+        },
+        model: "anthropic/claude-sonnet-4.5",
+        prompt: task,
+      }),
+    // Computer-use tasks: a headless Claude agent using available screen-control
+    // tools (mirroir MCP / cliclick / screencapture) — best-effort v1.
+    computer: async (task) =>
+      new ClaudeAgentExecutor({ extraArgs: ["--allowedTools", "Bash"] }).run({
+        runId: "computer",
+        node: { kind: "agent", id: "computer", dependsOn: [], role: "computer", tier: "executor", prompt: task },
+        role: {
+          id: "computer",
+          name: "computer",
+          systemPrompt:
+            "You are a computer-use agent on macOS. Use Bash (screencapture for screenshots, cliclick or osascript for input, " +
+            "`open` for apps) to complete the GUI task. Verify each step with a screenshot before proceeding. " +
+            "Return a concise result summary.",
+          policy: { models: {}, runner: "claude", autoApproveBelow: "medium" },
+        },
+        model: "anthropic/claude-sonnet-4.5",
+        prompt: task,
+      }),
+  }),
   llm,
   gatekeeper: {
     // Engine already auto-approved by policy; here we notify the human and wait.
